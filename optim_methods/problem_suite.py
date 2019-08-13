@@ -18,7 +18,7 @@ def addnoise(err, noise=0.0):
     return err
 
 
-def make_norm(noise=0.0):
+def make_norm(noise=0.0, verbose=True):
     '''
     Simplest problem possible -- just the norm of the input vector.
     '''
@@ -28,12 +28,13 @@ def make_norm(noise=0.0):
         return err
     
     func = lambda pars: norm(pars, noise=noise)
-    print("Created test norm function with noise=%s" % (noise))
-    print('Optimal solution: [0, 0, ... 0]')
+    if verbose:
+        print("Created test norm function with noise=%s" % (noise))
+        print('Optimal solution: [0, 0, ... 0]')
     return func
 
 
-def make_rosenbrock(ndims=2, noise=0.0):
+def make_rosenbrock(ndims=2, noise=0.0, verbose=True):
     '''
     Make a Rosenbrock's valley of 2 or 3 dimensions, optionally with noise.
     '''
@@ -51,9 +52,10 @@ def make_rosenbrock(ndims=2, noise=0.0):
         return err
 
     func = lambda pars: rosenbrock(pars, ndims=ndims, noise=noise)
-    print("Created test Rosenbrock's valley function with ndims=%s, noise=%s" % (ndims, noise))
-    print('Suggested starting point: %s' % ([-1]*ndims))
-    print('Optimal solution: %s' % ([0.5]*ndims))
+    if verbose:
+        print("Created test Rosenbrock's valley function with ndims=%s, noise=%s" % (ndims, noise))
+        print('Suggested starting point: %s' % ([-1]*ndims))
+        print('Optimal solution: %s' % ([0.5]*ndims))
     return func
     
 
