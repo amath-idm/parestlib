@@ -1,5 +1,8 @@
 '''
-Run tests on ASD.
+Run tests on each of the methods.
+
+Optimizations run are problems * methods * repeats; comment out lines that aren't
+required.
 
 Version: 2019aug13
 '''
@@ -8,9 +11,9 @@ import sciris as sc
 import optim_methods as om
 
 problems = [
-'norm',
-'rosenbrock',
-]
+        'norm',
+        'rosenbrock',
+        ]
 
 startvals = {
         'norm': [1, 2, 3],
@@ -19,16 +22,17 @@ startvals = {
 
 methods = {
         'ASD':       om.asd,
+        'BSD':       om.bsd,
         'OptimTool': om.optimtool
         }
 
 repeats = 3
 noisevals = [0, 0.05] # For noise values of larger than 0.05, standard ASD breaks
-
 #if 'doplot' not in locals(): doplot = True # For future use if plotting is implemented
 
 def heading(string):
-    sc.colorize('blue', '\n'*3+'—'*10+' '+string+' '+'—'*10)
+    divider = '—'*15 # Unicode, watch out!
+    sc.colorize('blue', '\n'*3+divider+string+divider)
     return None
 
 results = []
