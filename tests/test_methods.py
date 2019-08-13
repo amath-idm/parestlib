@@ -18,7 +18,8 @@ startvals = {
         }
 
 methods = {
-        'ASD': sc.asd,
+        'ASD':       om.asd,
+        'OptimTool': om.optimtool
         }
 
 repeats = 3

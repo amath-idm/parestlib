@@ -22,12 +22,14 @@ def make_norm(noise=0.0, verbose=True):
     '''
     Simplest problem possible -- just the norm of the input vector.
     '''
+    
     def norm(pars, noise=0.0):
         err = pl.linalg.norm(pars)
         err = addnoise(err, noise)
         return err
     
-    func = lambda pars: norm(pars, noise=noise)
+    func = lambda pars: norm(pars, noise=noise) # Create the actual function
+    
     if verbose:
         print("Created test norm function with noise=%s" % (noise))
         print('Optimal solution: [0, 0, ... 0]')
@@ -43,7 +45,7 @@ def make_rosenbrock(ndims=2, noise=0.0, verbose=True):
         x = pars[0]
         y = pars[1]
         err = 50*(y - x**2)**2 + (0.5 - x)**2; # Rosenbrock's valley
-        if ndims == 3:
+        if ndims == 3: # Optionally add a 3rd dimension
             z = pars[2]
             err += 10*abs(z-0.5)
         elif ndims > 3:
@@ -51,7 +53,8 @@ def make_rosenbrock(ndims=2, noise=0.0, verbose=True):
         err = addnoise(err, noise)
         return err
 
-    func = lambda pars: rosenbrock(pars, ndims=ndims, noise=noise)
+    func = lambda pars: rosenbrock(pars, ndims=ndims, noise=noise) # Create the actual function
+    
     if verbose:
         print("Created test Rosenbrock's valley function with ndims=%s, noise=%s" % (ndims, noise))
         print('Suggested starting point: %s' % ([-1]*ndims))
@@ -63,7 +66,7 @@ def plot_problem(which='rosenbrock', ndims=3, noise=None, npts=None, startvals=N
     if startvals is None: startvals = -1*pl.ones(ndims)
     if minvals   is None: minvals   = -1*pl.ones(ndims)
     if maxvals   is None: maxvals   =  1*pl.ones(ndims)
-    if ndims == 2:
+    if ndims == 2: # Set defaults
         if noise    is None: noise = 0.0
         if npts     is None: npts  = 100
         if perturb  is None: perturb = 0.0
@@ -86,9 +89,9 @@ def plot_problem(which='rosenbrock', ndims=3, noise=None, npts=None, startvals=N
     
     # Define objective function
     if which == 'rosenbrock':
-        func = make_rosenbrock(ndims=ndims, noise=noise)
+        objective_func = make_rosenbrock(ndims=ndims, noise=noise)
     elif which == 'norm':
-        func = make_norm(noise=noise)
+        objective_func = make_norm(noise=noise)
     else:
         raise NotImplementedError
     
@@ -100,7 +103,7 @@ def plot_problem(which='rosenbrock', ndims=3, noise=None, npts=None, startvals=N
                 xp = x + perturb*pl.randn()
                 yp = y + perturb*pl.randn() 
                 zp = z + perturb*pl.randn() 
-                objective = func([xp, yp, zp])
+                objective = objective_func([xp, yp, zp])
                 o = pl.log10(objective)
                 alldata.append([xp, yp, zp, o])
     alldata = pl.array(alldata)
