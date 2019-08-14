@@ -8,7 +8,7 @@ __all__ = ['asd', 'bsd']
 def asd(function, x, args=None, stepsize=0.1, sinc=2, sdec=2, pinc=2, pdec=2,
     pinitial=None, sinitial=None, xmin=None, xmax=None, maxiters=None, maxtime=None, 
     abstol=1e-6, reltol=1e-3, stalliters=None, stoppingfunc=None, randseed=None, 
-    label=None, verbose=2, **kwargs):
+    label=None, optimum='min', verbose=2, **kwargs):
     """
     Optimization using adaptive stochastic descent (ASD).
     
@@ -35,6 +35,7 @@ def asd(function, x, args=None, stepsize=0.1, sinc=2, sdec=2, pinc=2, pdec=2,
       stalliters     10*n    Number of iterations over which to calculate TolFun (n = number of parameters)
       stoppingfunc   None    External method that can be used to stop the calculation from the outside.
       randseed       None    The random seed to use
+      optimum        'min'   Whether to minimize or maximize the function
       verbose        2       How much information to print during the run
       label          None    A label to use to annotate the output
      
@@ -181,7 +182,10 @@ def asd(function, x, args=None, stepsize=0.1, sinc=2, sdec=2, pinc=2, pdec=2,
 
         # Check if this step was an improvement
         fvalold = fval # Store old fval
-        if fvalnew < fvalold: # New parameter set is better than previous one
+        if not optimum or optimum == 'min': conditional = fvalnew < fvalold
+        elif              optimum == 'max': conditional = fvalnew > fvalold
+        else:                               raise Exception('Optimum must be min or max, not "%s"' % optimum)
+        if conditional: # New parameter set is better than previous one
             probabilities[choice] = probabilities[choice] * pinc # Increase probability of picking this parameter again
             stepsizes[choice] = stepsizes[choice] * sinc # Increase size of step for next time
             x = xnew # Reset current parameters
