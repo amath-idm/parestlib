@@ -1,3 +1,7 @@
+'''
+Plot the test problems in problem_suite.py.
+'''
+
 import optim_methods as om
 
 kwargs = dict(
