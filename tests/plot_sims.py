@@ -7,7 +7,7 @@ import optim_methods as om
 
 kwargs = dict(
         uselog  = 1,   # Whether or not to use a logarithmic scale -- default 1
-        noise   = 0, 
+        noise   = 0,   # Not implemented since function is already noisy
         force3d = 1    # Whether to show 2D plots in 3D -- default 0
         )
 
