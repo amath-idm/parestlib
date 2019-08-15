@@ -158,8 +158,12 @@ def make_hills(noise=0.0, optimum=None, verbose=True):
 
 def plot_problem(which='rosenbrock', ndims=3, noise=None, npts=None, startvals=None, 
                  minvals=None, maxvals=None, randseed=None, perturb=None, alpha=None, 
-                 uselog=True, force3d=False, trajectory=None, optimum=None):
+                 uselog=True, force3d=False, trajectory=None, optimum=None, verbose=False):
     ''' Plot one of the test problems '''
+    
+    if ndims !=2 and which not in ['norm', 'rosenbrock']:
+        if verbose: print('Note: ndims=%s not supported for %s, resetting to 2' % (ndims, which))
+        ndims = 2
     
     if startvals is None: startvals = -1*pl.ones(ndims)
     if minvals   is None: minvals   = -1*pl.ones(ndims)
@@ -191,7 +195,7 @@ def plot_problem(which='rosenbrock', ndims=3, noise=None, npts=None, startvals=N
     if   which == 'rosenbrock': objective_func = make_rosenbrock(ndims=ndims, noise=noise, optimum=optimum)
     elif which == 'norm':       objective_func = make_norm(noise=noise, optimum=optimum)
     elif which == 'hills':      objective_func = make_hills(noise=noise, optimum=optimum)
-    else:                       raise NotImplementedError
+    else:                       objective_func = which # Assume it's supplied directly
     
     # Evaluate at each point
     alldata = []
