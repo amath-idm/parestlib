@@ -9,9 +9,12 @@ Version: 2019aug14
 import pylab as pl
 import scipy.signal as si
 import sciris as sc
+import optim_methods as om
 
 __all__ = ['blowfly_sim', 'make_blowflies', 'plot_blowflies']
 
+
+default_blowfly_pars = (pl.exp(3.8), 0.7)
 
 def blowfly_sim(pars, initialpop=None, npts=None):
     '''
@@ -28,7 +31,7 @@ def blowfly_sim(pars, initialpop=None, npts=None):
         https://github.com/kingaa/pomp/blob/master/R/blowflies.R
     '''
     # Handle input arguments -- default values from Wood's paper
-    if pars       is None: pars       = [pl.exp(3.8), 0.3] # Growth rate and noise term
+    if pars       is None: pars       = default_blowfly_pars # Growth rate and noise term
     if initialpop is None: initialpop = 1 # Population size
     if npts       is None: npts       = 400 # Number of time points
     
@@ -51,49 +54,59 @@ def blowfly_statistics(y):
     mean = pl.mean(y)
     skew = pl.median(y) - mean
     yzeromean = y-mean
-    ysmooth = sc.smooth(yzeromean, 1)
-    autocorr = pl.correlate(ysmooth, ysmooth, mode='same')
+    autocorr = pl.correlate(yzeromean, yzeromean, mode='same')
     autocorr /= autocorr.max()
     freqs,spectrum = si.periodogram(autocorr)
-    stats = {'mean':mean, 'skew':skew, 'autocorr':autocorr, 'freqs':freqs, 'spectrum':spectrum, 'ysmooth':ysmooth}
+    cumdist = sorted(y)
+    stats = sc.objdict({'cumdist':cumdist, 'mean':mean, 'skew':skew, 'autocorr':autocorr, 'freqs':freqs, 'spectrum':spectrum})
     return stats
     
 
 
 def make_blowflies(noise=0.0, optimum='min', verbose=True):
     
-    def blowfly_err():
-        pass
+    default_y = blowfly_sim(pars=default_blowfly_pars, initialpop=None, npts=None)
+    default_stats = blowfly_statistics(default_y)
+    
+    def blowfly_err(pars):
+        y = blowfly_sim(pars=pars, initialpop=None, npts=None)
+        stats = blowfly_statistics(y)
+        mismatch = stats['cumdist'] - default_stats['cumdist']
+        err = pl.sqrt(pl.mean(mismatch**2)) # Calculate RMSE between predicted and actual CDF
+        err = om.problem_suite.addnoise(err, noise)
+        if optimum == 'max':
+            err = -err
+        return err
     
     func = lambda pars: blowfly_err(pars) # Create the actual function
     
     if verbose:
         print("Created blowfly function with noise=%s" % (noise))
-        print('Suggested starting point: [0.5,0.5]')
-        print('Optimal solution: %s≈1.037 near [4,1]' % optimum)
+        print('Suggested starting point: [20,0.5]')
+        print('Optimal solution: %s≈0 near %s' % (optimum, str(default_blowfly_pars)))
     return func
 
 
-def plot_blowflies(pars=(pl.exp(3.8), 0.3), initialpop=None, npts=400):
+def plot_blowflies(pars=default_blowfly_pars, initialpop=None, npts=400):
     x = pl.arange(npts)
     y = blowfly_sim(pars=pars, initialpop=initialpop, npts=npts)
     stats = blowfly_statistics(y)
     
     pl.figure()
     
-    pl.subplot(3,1,1)
-    pl.plot(x, stats['ysmooth'], marker='o')
+    pl.subplot(2,1,1)
+    pl.plot(x, y, marker='o')
     pl.xlabel('Days')
     pl.ylabel('Population size')
     pl.title('Blowfly simulation with r=%0.2f, σ=%0.2f' % (pars[0], pars[1]))
     
-    pl.subplot(3,1,2)
+    pl.subplot(2,1,2)
     pl.plot(stats['autocorr'])
     
-    pl.subplot(3,1,3)
-    pl.plot(stats['spectrum'])    
+    pl.subplot(2,1,2)
+    pl.plot(sorted(y))    
     
-    output = {'x':x, 'y':y}
+    output = sc.objdict({'x':x, 'y':y})
     output.update(stats)
     return output
     

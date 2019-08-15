@@ -15,7 +15,7 @@ Version: 2019aug14
 import pylab as pl
 import sciris as sc
 
-__all__ = ['make_norm', 'make_rosenbrock', 'make_hills', 'plot_problem']
+__all__ = ['addnoise', 'make_norm', 'make_rosenbrock', 'make_hills', 'plot_problem']
 
 
 def addnoise(err, noise=0.0):
@@ -86,6 +86,8 @@ def make_norm(noise=0.0, optimum=None, verbose=True):
     
     if verbose:
         print("Created test norm function with noise=%s" % (noise))
+        print('Suggested starting point: [1, 1, ... 1]')
+        print('Suggested limits: [-1,1]')
         print('Optimal solution: %s=0 at [0, 0, ... 0]' % optimum)
     return func
 
@@ -115,6 +117,7 @@ def make_rosenbrock(ndims=2, noise=0.0, optimum=None, verbose=True):
     if verbose:
         print("Created test Rosenbrock's valley function with ndims=%s, noise=%s" % (ndims, noise))
         print('Suggested starting point: %s' % ([-1]*ndims))
+        print('Suggested limits: [-1,1]')
         print('Optimal solution: %s=0 at %s' % (optimum, [0.5]*ndims))
     return func
     
@@ -144,6 +147,7 @@ def make_hills(noise=0.0, optimum=None, verbose=True):
     if verbose:
         print("Created test hills function with noise=%s" % (noise))
         print('Suggested starting point: [0.5,0.5]')
+        print('Suggested limits: [0,5]')
         print('Optimal solution: %s≈1.037 near [4,1]' % optimum)
     return func
 
