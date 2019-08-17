@@ -48,7 +48,34 @@ def get_r(npars, vfrac):
     return r
 
 
-def optimtool(func, x, metapars=None, verbose=2):
+def sample_hypersphere(mp, xc, xmax, xmin):
+    npars = len(xc)
+    deviations = []
+    standard_normal = st.norm(loc=0, scale=1)
+    radius_normal = st.norm(loc=mp.mu_r, scale=mp.sigma_r)
+    for i in range(mp.N):
+        sn_rvs = standard_normal.rvs(size=len(mp._lenpars))
+        sn_nrm = np.linalg.st.norm(sn_rvs)
+        radius = radius_normal.rvs()
+        deviations.append([radius / sn_nrm * sn for sn in sn_rvs])
+
+    samples = np.concatenate([xc] * mp.N)
+
+    dt = np.transpose(deviations)
+
+    for i in range(npars):
+        Xcen = xc[i]
+        Xrange = xmax[i] - xmin[i]
+        samples[:,i] = Xcen + dt[i] * Xrange
+    
+    # Clamp
+    for i in range(npars):
+        samples[:,i] = np.minimum(xmax[i], np.maximum(xmin[i], samples[:,i]))
+    
+    return samples
+
+
+def optimtool(func, x, xmin=None, xmax=None, metapars=None, verbose=2):
     '''
     Reimplementation of the original dtk-tools OptimTool function:
         dtk-tools/calibtool/algorithms/OptimTool.py
@@ -71,35 +98,7 @@ def optimtool(func, x, metapars=None, verbose=2):
             })
     
     
-    def sample_hypersphere():
-        deviations = []
-        standard_normal = st.norm(loc=0, scale=1)
-        radius_normal = st.norm(loc=mp.mu_r, scale=mp.sigma_r)
-        for i in range(mp.N - mp.center_repeats):
-            sn_rvs = standard_normal.rvs(size=len(mp._lenpars))
-            sn_nrm = np.linalg.st.norm(sn_rvs)
-            radius = radius_normal.rvs()
-            deviations.append([radius / sn_nrm * sn for sn in sn_rvs])
-
-        X_center = state.reset_index(drop=True).set_index(['Parameter'])[['Center']]
-        xc = X_center.transpose().reset_index(drop=True)
-        xc.columns.name = ""
-
-        samples = pd.concat([xc] * N).reset_index(drop=True)
-
-        dt = np.transpose(deviations)
-
-        dynamic_state_by_param = dynamic_state.set_index('Parameter')
-        for i, pname in enumerate(dynamic_state['Parameter']):
-            Xcen = dynamic_state_by_param.loc[pname, 'Center']
-            Xrange = dynamic_state_by_param.loc[pname, 'Max'] - dynamic_state_by_param.loc[pname, 'Min']
-            samples.loc[mp.center_repeats:mp.N, pname] = Xcen + dt[i] * Xrange
-        
-        # Clamp
-        for pname in X.columns:
-            X[pname] = np.minimum(mp.Xmax[pname], np.maximum(mp.Xmin[pname], X[pname]))
-        
-        return samples
+    
     
     
     def ascent():
