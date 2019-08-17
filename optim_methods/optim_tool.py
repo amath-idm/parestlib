@@ -48,13 +48,17 @@ def get_r(npars, vfrac):
     return r
 
 
-def sample_hypersphere(mp, x, xmax, xmin):
+def sample_hypersphere(mp, x, xmax, xmin, fittable):
     '''
     Sample points from a hypersphere
     '''
     
+    import pylab as pl; pl.seed(857232)
+    print('TEST NUMBER2: %s' % pl.rand())
+    
     # Initialize
-    npars = len(x)
+    npars = sum(fittable)
+    indices = sc.findinds(fittable)
     dt         = np.zeros((mp.N, npars))
     samples    = np.zeros((mp.N, npars))
     standard_normal = st.norm(loc=0, scale=1)
@@ -66,9 +70,12 @@ def sample_hypersphere(mp, x, xmax, xmin):
         sn_nrm = np.linalg.norm(sn_rvs)
         radius = radius_normal.rvs()
         dt[r,:] = radius/sn_nrm*sn_rvs
+    
+    print('MASHY')
+    print(dt)
 
     # Calculate samples
-    for p in range(npars): # Loop over parameters
+    for p,ind in enumerate(indices): # Loop over parameters
         Xcen = x[p]
         Xrange = xmax[p] - xmin[p]
         samples[:,p] = Xcen + dt[:,p] * Xrange

@@ -66,7 +66,7 @@ def create_DTK():
     OT = OptimTool(params,
         mu_r=r,             # <-- radius for numerical derivatve.  CAREFUL not to go too small with integer parameters
         sigma_r=r/10.,      # <-- stdev of radius
-        center_repeats=2,   # <-- Number of times to replicate the center (current guess).  Nice to compare intrinsic to extrinsic noise
+        center_repeats=0,   # <-- Number of times to replicate the center (current guess).  Nice to compare intrinsic to extrinsic noise
         samples_per_iteration=10  # 32 # <-- Samples per iteration, includes center repeats.  Actual number of sims run is this number times number of sites.
     )
     return OT
@@ -76,9 +76,10 @@ class create_OM():
     ''' Wrapper class for optim_methods functions, for easier testing '''
     
     def __init__(self):
-        self.x    = pl.array([1.75, 0.65, 1500, 25])
-        self.xmin = pl.array([0.50, 0.40,    1,  1])
-        self.xmax = pl.array([2.50, 0.70, 5000,  1])
+        self.x        = pl.array([1.75, 0.65, 1500, 25])
+        self.xmin     = pl.array([0.50, 0.40,    1,  1])
+        self.xmax     = pl.array([2.50, 0.70, 5000, 50])
+        self.fittable = pl.array([   1,    0,    1,  0])
         npars = len(self.x)
         vfrac = 0.01
         r = om.optim_tool.get_r(npars, vfrac)
@@ -91,7 +92,7 @@ class create_OM():
         return None
     
     def sample_hypersphere(self):
-        samples = om.optim_tool.sample_hypersphere(mp=self.mp, x=self.x, xmin=self.xmin, xmax=self.xmax)
+        samples = om.optim_tool.sample_hypersphere(mp=self.mp, x=self.x, xmin=self.xmin, xmax=self.xmax, fittable=self.fittable)
         return samples
     
     
@@ -106,7 +107,6 @@ OM = create_OM()
 ##########################################
 
 if 'initial_points' in torun:
-    pl.seed(randseed)
     dtk_samples = OT.choose_initial_samples()
     om_samples = OM.sample_hypersphere()
     dtk_samples_array = dtk_samples.to_numpy()
