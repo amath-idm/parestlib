@@ -67,7 +67,7 @@ def create_DTK():
         mu_r=r,             # <-- radius for numerical derivatve.  CAREFUL not to go too small with integer parameters
         sigma_r=r/10.,      # <-- stdev of radius
         center_repeats=0,   # <-- Number of times to replicate the center (current guess).  Nice to compare intrinsic to extrinsic noise
-        samples_per_iteration=10  # 32 # <-- Samples per iteration, includes center repeats.  Actual number of sims run is this number times number of sites.
+        samples_per_iteration=10000  # 32 # <-- Samples per iteration, includes center repeats.  Actual number of sims run is this number times number of sites.
     )
     return OT
 
@@ -86,7 +86,7 @@ class create_OM():
         self.mp = sc.objdict({
                     'mu_r':    r,
                     'sigma_r': r/10,
-                    'N':       10,
+                    'N':       10000,
                     'center_repeats': 1,
                     })
         return None
@@ -107,11 +107,23 @@ OM = create_OM()
 ##########################################
 
 if 'initial_points' in torun:
-    dtk_samples = OT.choose_initial_samples()
+    doprint = False
+    doplot = True
+    dtk_samples_df = OT.choose_initial_samples()
     om_samples = OM.sample_hypersphere()
-    dtk_samples_array = dtk_samples.to_numpy()
-    print(dtk_samples_array)
-    print(om_samples)
+    dtk_samples = dtk_samples_df.to_numpy()
+    
+    if doprint:
+        print(dtk_samples)
+        print(om_samples)
+    
+    if doplot:
+        fig = pl.figure()
+        pl.subplot(2,1,1)
+        pl.hist(dtk_samples[:,0], bins=100)
+        pl.subplot(2,1,2)
+        pl.hist(om_samples[:,0], bins=100)
+    
     
 
 print('Done.')

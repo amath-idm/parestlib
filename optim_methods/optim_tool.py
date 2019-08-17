@@ -57,8 +57,7 @@ def sample_hypersphere(mp, x, xmax, xmin, fittable):
     print('TEST NUMBER2: %s' % pl.rand())
     
     # Initialize
-    npars = sum(fittable)
-    indices = sc.findinds(fittable)
+    npars = len(x)
     dt         = np.zeros((mp.N, npars))
     samples    = np.zeros((mp.N, npars))
     standard_normal = st.norm(loc=0, scale=1)
@@ -75,10 +74,13 @@ def sample_hypersphere(mp, x, xmax, xmin, fittable):
     print(dt)
 
     # Calculate samples
-    for p,ind in enumerate(indices): # Loop over parameters
+    for p in range(npars): # Loop over parameters
         Xcen = x[p]
-        Xrange = xmax[p] - xmin[p]
-        samples[:,p] = Xcen + dt[:,p] * Xrange
+        if fittable[p]:
+            delta = dt[:,p] * (xmax[p] - xmin[p])
+        else:
+            delta = 0
+        samples[:,p] = Xcen + delta
     
     # Clamp
     for p in range(npars):
