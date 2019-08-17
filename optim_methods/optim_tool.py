@@ -10,6 +10,7 @@ Version: 2019aug15
 import numpy as np
 import sciris as sc
 import scipy.special as sp # for calculation of mu_r
+import scipy.stats as st
 
 __all__ = ['optimtool', 'get_r']
 
@@ -24,7 +25,7 @@ def get_r(npars, vfrac):
     npars : int
         Number of parameters (NB, expect >=2!)
     vfrac : float
-        Fraction of volume of the unit hypercube to cover by the hypersphere
+        Fraction of volume
 
     Returns
     -------
@@ -41,9 +42,9 @@ def get_r(npars, vfrac):
     
     See https://en.wikipedia.org/wiki/Volume_of_an_n-ball
     
-    Version: 2019aug15    
+    Version: 2019aug16 
     '''
-    r = (np.pi**(npars/2.0)/sp.gammaln(npars/2.+1)*vfrac)**(1.0/npars) # Original: r = np.exp(1.0/npars * (np.log(vfrac) - sp.gammaln(npars/2.+1) + npars/2.*np.log(np.pi)))
+    r = np.exp(1.0/npars * (np.log(vfrac) - sp.gammaln(npars/2.+1) + npars/2.*np.log(np.pi)))
     return r
 
 
@@ -60,8 +61,45 @@ def optimtool(func, x, metapars=None, verbose=2):
     Version: 2019aug16
     '''
     
+    # Define defaults
+    mp = sc.objdict({
+            'mu_r':    get_r(),
+            'sigma_r': get_r()/10,
+            'N':    1,
+            'center_repeats': 1,
+            '_lenpars': 1,
+            })
+    
+    
     def sample_hypersphere():
-        pass
+        deviations = []
+        standard_normal = st.norm(loc=0, scale=1)
+        radius_normal = st.norm(loc=mp.mu_r, scale=mp.sigma_r)
+        for i in range(mp.N - mp.center_repeats):
+            sn_rvs = standard_normal.rvs(size=len(mp._lenpars))
+            sn_nrm = np.linalg.st.norm(sn_rvs)
+            radius = radius_normal.rvs()
+            deviations.append([radius / sn_nrm * sn for sn in sn_rvs])
+
+        X_center = state.reset_index(drop=True).set_index(['Parameter'])[['Center']]
+        xc = X_center.transpose().reset_index(drop=True)
+        xc.columns.name = ""
+
+        samples = pd.concat([xc] * N).reset_index(drop=True)
+
+        dt = np.transpose(deviations)
+
+        dynamic_state_by_param = dynamic_state.set_index('Parameter')
+        for i, pname in enumerate(dynamic_state['Parameter']):
+            Xcen = dynamic_state_by_param.loc[pname, 'Center']
+            Xrange = dynamic_state_by_param.loc[pname, 'Max'] - dynamic_state_by_param.loc[pname, 'Min']
+            samples.loc[mp.center_repeats:mp.N, pname] = Xcen + dt[i] * Xrange
+        
+        # Clamp
+        for pname in X.columns:
+            X[pname] = np.minimum(mp.Xmax[pname], np.maximum(mp.Xmin[pname], X[pname]))
+        
+        return samples
     
     
     def ascent():
