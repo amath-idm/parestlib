@@ -79,9 +79,9 @@ class create_OM():
         self.x    = pl.array([1.75, 0.65, 1500, 25])
         self.xmin = pl.array([0.50, 0.40,    1,  1])
         self.xmax = pl.array([2.50, 0.70, 5000,  1])
-        self.npars = len(self.x)
-        self.vfrac = 0.01
-        r = om.optim_tool.get_r(self.npars, self.vfrac)
+        npars = len(self.x)
+        vfrac = 0.01
+        r = om.optim_tool.get_r(npars, vfrac)
         self.mp = sc.objdict({
                     'mu_r':    r,
                     'sigma_r': r/10,
@@ -91,7 +91,7 @@ class create_OM():
         return None
     
     def sample_hypersphere(self):
-        samples = om.optim_tool.sample_hypersphere(mp=self.mp, xc=self.x, xmin=self.xmin, xmax=self.xmax)
+        samples = om.optim_tool.sample_hypersphere(mp=self.mp, x=self.x, xmin=self.xmin, xmax=self.xmax)
         return samples
     
     

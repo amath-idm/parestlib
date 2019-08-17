@@ -48,29 +48,34 @@ def get_r(npars, vfrac):
     return r
 
 
-def sample_hypersphere(mp, xc, xmax, xmin):
-    npars = len(xc)
-    deviations = []
+def sample_hypersphere(mp, x, xmax, xmin):
+    '''
+    Sample points from a hypersphere
+    '''
+    
+    # Initialize
+    npars = len(x)
+    dt         = np.zeros((mp.N, npars))
+    samples    = np.zeros((mp.N, npars))
     standard_normal = st.norm(loc=0, scale=1)
     radius_normal = st.norm(loc=mp.mu_r, scale=mp.sigma_r)
-    for i in range(mp.N):
-        sn_rvs = standard_normal.rvs(size=len(mp._lenpars))
-        sn_nrm = np.linalg.st.norm(sn_rvs)
+    
+    # Calculate deltas
+    for r in range(mp.N): # Loop over repeats
+        sn_rvs = standard_normal.rvs(size=npars)
+        sn_nrm = np.linalg.norm(sn_rvs)
         radius = radius_normal.rvs()
-        deviations.append([radius / sn_nrm * sn for sn in sn_rvs])
+        dt[r,:] = radius/sn_nrm*sn_rvs
 
-    samples = np.concatenate([xc] * mp.N)
-
-    dt = np.transpose(deviations)
-
-    for i in range(npars):
-        Xcen = xc[i]
-        Xrange = xmax[i] - xmin[i]
-        samples[:,i] = Xcen + dt[i] * Xrange
+    # Calculate samples
+    for p in range(npars): # Loop over parameters
+        Xcen = x[p]
+        Xrange = xmax[p] - xmin[p]
+        samples[:,p] = Xcen + dt[:,p] * Xrange
     
     # Clamp
-    for i in range(npars):
-        samples[:,i] = np.minimum(xmax[i], np.maximum(xmin[i], samples[:,i]))
+    for p in range(npars):
+        samples[:,p] = np.minimum(xmax[p], np.maximum(xmin[p], samples[:,p]))
     
     return samples
 
