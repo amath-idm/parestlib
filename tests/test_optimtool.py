@@ -111,6 +111,7 @@ class create_OM(sc.prettyobj):
                     'sigma_r': r/10,
                     'N':       10,
                     'center_repeats': 1,
+                    'rsquared_thresh': 0.5,
                     })
         return
     
@@ -118,9 +119,20 @@ class create_OM(sc.prettyobj):
         samples = om.optim_tool.sample_hypersphere(mp=self.mp, x=self.x, xmin=self.xmin, xmax=self.xmax, fittable=self.fittable)
         return samples
     
+    def gather_results(self, randseed=None, results=None):
+        if randseed is not None:
+            pl.seed(randseed)
+        if results is None:
+            results = pl.rand(self.mp.N)
+        return results
+    
+    def ascend(self, samples, results):
+        samples = om.optim_tool.ascend(samples, results, mp=self.mp, x=self.x, xmin=self.xmin, xmax=self.xmax, fittable=self.fittable)
+        return samples
+    
     
 
-
+# Create the class instances to be used for the tests
 OT = create_DTK()
 OM = create_OM()
 
@@ -164,13 +176,38 @@ if 'initial_points' in torun:
             
     
 if 'first_iteration' in torun:
+    # Tests to run
+    doprint = True
+    doassert = True
+    
+    # DTK
     pl.seed(randseed)
-    sam1 = OT.choose_initial_samples()
-    res1 = OT.gather_results(1)
-    sam2 = OT.choose_samples_via_gradient_ascent(1)
-    res2 = OT.gather_results(2)
-    sam3 = OT.choose_samples_via_gradient_ascent(2)
-    res3 = OT.gather_results(3)
+    dtk_sam1 = OT.choose_initial_samples() # TODO: Make actual loop
+    dtk_res1 = OT.gather_results(1)
+    dtk_sam2 = OT.choose_samples_via_gradient_ascent(1)
+    dtk_res2 = OT.gather_results(2)
+    dtk_sam3 = OT.choose_samples_via_gradient_ascent(2)
+    
+    # optim_methods
+    pl.seed(randseed)
+    om_sam1 = OM.sample_hypersphere() # TODO: Make actual loop
+    om_res1 = OM.gather_results(1)
+    om_sam2 = OM.ascend(om_sam1, om_res1)
+    om_res2 = OM.gather_results(2)
+    om_sam3 = OM.ascend(om_sam2, om_res2)
+    
+    if doprint:
+        print(dtk_sam3)
+        print(om_sam3)
+    
+    if doassert:
+        try:
+            print('Asserting equality of third set of sample points...')
+            assert (om_sam3==dtk_sam3.to_numpy()).all()
+            print('Passed!')
+        except:
+            raise
+    
     
     
 

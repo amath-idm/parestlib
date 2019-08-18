@@ -11,6 +11,7 @@ import numpy as np
 import sciris as sc
 import scipy.special as sp # for calculation of mu_r
 import scipy.stats as st
+import statsmodels.api as sm
 
 __all__ = ['optimtool', 'get_r']
 
@@ -85,6 +86,31 @@ def sample_hypersphere(mp, x, xmax, xmin, fittable):
     return samples
 
 
+def ascend(samples, results, mp, x, xmax, xmin, fittable):
+    
+    # Calculate ordinary least squares fit of sample parameters on results
+    mod = sm.OLS(results, sm.add_constant(samples))
+    mod_fit = mod.fit() # Perform fit
+#    fittedvalues = mod_fit.fittedvalues
+
+    if mod_fit.rsquared > mp.rsquared_thresh:
+        fitinds = sc.findinds(fittable)
+        old_x = x[fitinds]
+        coef = mod_fit.params[1:]  # Drop constant
+        xranges = xmax - xmin
+        den = np.sqrt(sum([xranges[p]**2 * c**2 for c,p in zip(coef, fitinds)]))
+        new_x = [xi + xranges[p]**2 * c*mp.mu_r/den for xi, c, p in zip(old_x, coef, fitinds)]
+    else:
+        max_idx = np.argmax(results)
+        new_x = samples[max_idx]
+    
+    # Clamp
+    x = np.minimum(xmax, np.maximum(xmin, x))
+    
+    samples = sample_hypersphere(mp=mp, x=new_x, xmin=xmin, xmax=xmax, fittable=fittable)
+    return samples
+
+
 def optimtool(func, x, xmin=None, xmax=None, metapars=None, verbose=2):
     '''
     Reimplementation of the original dtk-tools OptimTool function:
@@ -110,8 +136,7 @@ def optimtool(func, x, xmin=None, xmax=None, metapars=None, verbose=2):
     
     
     
-    def ascent():
-        pass
+    
     
     # Placeholder output
     output = sc.objdict()
