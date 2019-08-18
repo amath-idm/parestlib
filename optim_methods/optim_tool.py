@@ -50,41 +50,37 @@ def get_r(npars, vfrac):
 
 def sample_hypersphere(mp, x, xmax, xmin, fittable):
     '''
-    Sample points from a hypersphere
+    Sample points from a hypersphere. See tests/test_optimtool.py for usage example.
     '''
     
-    import pylab as pl; pl.seed(857232)
-    print('TEST NUMBER2: %s' % pl.rand())
-    
     # Initialize
-    npars = len(x)
-    dt         = np.zeros((mp.N, npars))
-    samples    = np.zeros((mp.N, npars))
-    standard_normal = st.norm(loc=0, scale=1)
-    radius_normal = st.norm(loc=mp.mu_r, scale=mp.sigma_r)
+    fitinds = sc.findinds(fittable) # The indices of the fittable parameters
+    nfittable = len(fitinds) # How many fittable parameters
+    npars = len(x) # Total number of parameters
+    standard_normal = st.norm(loc=0, scale=1) # Initialize a standard normal distribution
+    radius_normal = st.norm(loc=mp.mu_r, scale=mp.sigma_r) # And a scaled one
     
-    # Calculate deltas
+    # Calculate deviations
+    deviations = np.zeros((mp.N, nfittable)) # Deviations from current center point
     for r in range(mp.N): # Loop over repeats
-        sn_rvs = standard_normal.rvs(size=npars)
-        sn_nrm = np.linalg.norm(sn_rvs)
-        radius = radius_normal.rvs()
-        dt[r,:] = radius/sn_nrm*sn_rvs
+        sn_rvs = standard_normal.rvs(size=nfittable) # Sample from the standard distribution
+        sn_nrm = np.linalg.norm(sn_rvs) # Calculate the norm of these samples
+        radius = radius_normal.rvs() # Sample from the scaled distribution
+        deviations[r,:] = radius/sn_nrm*sn_rvs # Deviation is the scaled sample adjusted by the rescaled standard sample
     
-    print('MASHY')
-    print(dt)
-
-    # Calculate samples
-    for p in range(npars): # Loop over parameters
-        Xcen = x[p]
+    # Calculate parameter samples
+    samples = np.zeros((mp.N, npars)) # New samples
+    for p in range(npars): # Loop over all parameters
         if fittable[p]:
-            delta = dt[:,p] * (xmax[p] - xmin[p])
+            ind = sc.findinds(fitinds==p)[0] # Convert the parameter index back to the fittable parameter index
+            delta = deviations[:,ind] * (xmax[p] - xmin[p]) # Scale the deviation by the allowed parameter range
         else:
-            delta = 0
-        samples[:,p] = Xcen + delta
+            delta = 0 # If not fittable, set to zer
+        samples[:,p] = x[p] + delta # Set new parameter value
     
     # Clamp
     for p in range(npars):
-        samples[:,p] = np.minimum(xmax[p], np.maximum(xmin[p], samples[:,p]))
+        samples[:,p] = np.minimum(xmax[p], np.maximum(xmin[p], samples[:,p])) # Ensure all samples are within range
     
     return samples
 
@@ -94,7 +90,7 @@ def optimtool(func, x, xmin=None, xmax=None, metapars=None, verbose=2):
     Reimplementation of the original dtk-tools OptimTool function:
         dtk-tools/calibtool/algorithms/OptimTool.py
     
-    The algorithm has two basic parts. In the first part, it samples from a hypershell
+    The algorithm has two basic parts. In the first part, it samples from a hyperdoughnut
     around the current point. In the second part, it takes this hypershell and tries to fit
     a hyperplane to it, and if it "succeeds" (the r-squared value is high enough),
     it will step in the uphill direction. Otherwise, it just takes the best point.
@@ -108,7 +104,6 @@ def optimtool(func, x, xmin=None, xmax=None, metapars=None, verbose=2):
             'sigma_r': get_r()/10,
             'N':    1,
             'center_repeats': 1,
-            '_lenpars': 1,
             })
     
     
