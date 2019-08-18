@@ -35,7 +35,9 @@ def create_DTK():
     def new_repr(self): return sc.prepr(self)
     
     
-    def gather_results(self, results=None):
+    def gather_results(self, randseed=None, results=None):
+        if randseed is not None:
+            pl.seed(randseed)
         if results is None:
             results = pl.rand(len(self.data['Results']))
         self.data['Results'] = results
@@ -162,12 +164,13 @@ if 'initial_points' in torun:
             
     
 if 'first_iteration' in torun:
+    pl.seed(randseed)
     sam1 = OT.choose_initial_samples()
-    res1 = OT.gather_results()
+    res1 = OT.gather_results(1)
     sam2 = OT.choose_samples_via_gradient_ascent(1)
-    res2 = OT.gather_results()
+    res2 = OT.gather_results(2)
     sam3 = OT.choose_samples_via_gradient_ascent(2)
-    res3 = OT.gather_results()
+    res3 = OT.gather_results(3)
     
     
 
