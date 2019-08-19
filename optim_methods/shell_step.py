@@ -69,10 +69,10 @@ class ShellStep(sc.prettyobj):
     
     def __init__(self, func, x, xmin, xmax, fittable=None, mp=None, maxiters=None, optimum=None, func_args=None, verbose=None):
         self.func = func
-        self.x    = x
-        self.xmin = xmin
-        self.xmax = xmax
-        self.fittable  = fittable  if fittable  is not None else np.ones(len(x)) # Set everything to be fittable by default
+        self.x    = np.array(x)
+        self.xmin = np.array(xmin)
+        self.xmax = np.array(xmax)
+        self.fittable  = np.array(fittable) if fittable is not None else np.ones(len(x)) # Set everything to be fittable by default
         self.maxiters  = maxiters  if maxiters  is not None else 10 # Set iterations to be 10 by default
         self.func_args = func_args if func_args is not None else {}
         self.verbose   = verbose   if verbose   is not None else 2
@@ -142,6 +142,7 @@ class ShellStep(sc.prettyobj):
         
         self.samples = samples
         self.allsamples[self.key] = samples
+        self.iteration += 1
         return self.samples
     
     
@@ -164,9 +165,9 @@ class ShellStep(sc.prettyobj):
         mod_fit = mod.fit() # Perform fit
         
         # Decide what type of step to take
+        fitinds = sc.findinds(self.fittable)
         if mod_fit.rsquared > self.mp.rsquared_thresh: # The hyperplane is a good fit, calculate gradient descent
-            fitinds = sc.findinds(self.fittable)
-            old_center = self.center[fitinds]
+            old_center = self.x[fitinds]
             coef = mod_fit.params[1:]  # Drop constant
             xranges = self.xmax - self.xmin
             den = np.sqrt(sum([xranges[p]**2 * c**2 for c,p in zip(coef, fitinds)]))
@@ -187,8 +188,10 @@ class ShellStep(sc.prettyobj):
         ''' Actually perform an optimization '''
         self.sample_hypershell() # Initialize
         for i in range(self.maxiters): # Iterate
+            if self.verbose>=1: print(f'Step {i+1} of {self.maxiters}')
             self.evaluate() # Evaluate the objective function
             self.step() # Calculate the next step
+            
         
         # Create output structure
         output = sc.objdict()

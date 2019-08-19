@@ -213,13 +213,14 @@ def plot_problem(which='rosenbrock', ndims=3, noise=None, npts=None, startvals=N
     Z = alldata[:,2]
     O = alldata[:,3]
     if uselog:
-        if (O<=0).all():
-            signflipped = True
+        if (O>=0).all(): # Calculate the log -- normal case
+            O = pl.log10(O) 
+        elif (O<=0).all(): # Completely negative -- flip, calculate the log, then flip again
             O = -O # Flip the sign
+            O = pl.log10(O) # Calculate the log
+            O = -O # Flip back
         else:
-            signflipped = False
-        O = pl.log10(O) # Calculate the log
-        if signflipped: O = -O # Flip it back
+            print('WARNING: plot_problem() cannot plot the log since the values cross 0')
     fig = pl.figure(figsize=(16,12))
     if ndims == 2:
         if force3d:
