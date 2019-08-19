@@ -1,7 +1,10 @@
 '''
 Tests for OptimTool. Adapted from dtk-tools/examples/Calibration/example_OptimTool.py
 
-Version: 2019aug17
+NOTE -- this file is deprecated, it was used to test equivalence between the new
+and original versions of OptimTool (now called ShellStep).
+
+Version: 2019aug18
 '''
 
 ##########################################

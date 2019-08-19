@@ -14,6 +14,7 @@ Version: 2019aug14
 
 import pylab as pl
 import sciris as sc
+eps = 1e-3 # To avoid log(0)
 
 __all__ = ['addnoise', 'make_norm', 'make_rosenbrock', 'make_hills', 'plot_problem']
 
@@ -206,14 +207,15 @@ def plot_problem(which='rosenbrock', ndims=3, noise=None, npts=None, startvals=N
                 yp = y + perturb*pl.randn() 
                 zp = z + perturb*pl.randn() 
                 o = objective_func([xp, yp, zp])
-                if uselog:
-                    o = pl.log10(o)
                 alldata.append([xp, yp, zp, o])
     alldata = pl.array(alldata)
     X = alldata[:,0]
     Y = alldata[:,1]
     Z = alldata[:,2]
     O = alldata[:,3]
+    if uselog:
+        if (O<eps).any(): O += eps - O.min() # Ensure it doesn't go negative
+        O = pl.log10(O)
     fig = pl.figure(figsize=(16,12))
     if ndims == 2:
         if force3d:
