@@ -103,11 +103,12 @@ def ascend(samples, results, mp, x, xmax, xmin, fittable):
     else:
         max_idx = np.argmax(results)
         new_x = samples[max_idx]
+    x[fitinds] = new_x
     
     # Clamp
     x = np.minimum(xmax, np.maximum(xmin, x))
     
-    samples = sample_hypersphere(mp=mp, x=new_x, xmin=xmin, xmax=xmax, fittable=fittable)
+    samples = sample_hypersphere(mp=mp, x=x, xmin=xmin, xmax=xmax, fittable=fittable)
     return samples
 
 

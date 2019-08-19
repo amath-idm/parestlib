@@ -18,7 +18,7 @@ import optim_methods as om
 randseed = 5845235
 torun = [
 #        'initial_points',
-        'first_iteration',
+        'iterate',
         ]
 
 # To make dataframes easier to debug
@@ -40,7 +40,7 @@ def create_DTK():
             pl.seed(randseed)
         if results is None:
             results = pl.rand(len(self.data['Results']))
-        self.data['Results'] = results
+        self.data['Results'][-len(results):] = results
         return results
     
     OptimTool.__repr__ = new_repr
@@ -175,35 +175,53 @@ if 'initial_points' in torun:
             raise
             
     
-if 'first_iteration' in torun:
+if 'iterate' in torun:
     # Tests to run
     doprint = True
     doassert = True
+    doplot = True
+    niters = 10
     
+    def results_from_sample(sample):
+        sample = pl.array(sample) # Ensure it's an array
+        variates = sample[:,[0,2]]
+        norms = pl.norm(variates, axis=1)
+        return norms
+        
     # DTK
     pl.seed(randseed)
-    dtk_sam1 = OT.choose_initial_samples() # TODO: Make actual loop
-    dtk_res1 = OT.gather_results(1)
-    dtk_sam2 = OT.choose_samples_via_gradient_ascent(1)
-    dtk_res2 = OT.gather_results(2)
-    dtk_sam3 = OT.choose_samples_via_gradient_ascent(2)
+    dtk_sam = OT.choose_initial_samples()
+    dtk_sams = [dtk_sam]
+    dtk_results = []
+    for i in range(niters):
+        sams = dtk_sams[-1]
+        results = results_from_sample(sams)
+        OT.gather_results(results=results)
+        new_sams = OT.choose_samples_via_gradient_ascent(i+1)
+        dtk_sams.append(new_sams)
+        dtk_results.append(results)
     
     # optim_methods
     pl.seed(randseed)
-    om_sam1 = OM.sample_hypersphere() # TODO: Make actual loop
-    om_res1 = OM.gather_results(1)
-    om_sam2 = OM.ascend(om_sam1, om_res1)
-    om_res2 = OM.gather_results(2)
-    om_sam3 = OM.ascend(om_sam2, om_res2)
+    om_sam = OM.sample_hypersphere() 
+    om_sams = [om_sam]
+    om_results = []
+    for i in range(niters):
+        sams = om_sams[-1]
+        results = results_from_sample(sams)
+        OM.gather_results(results=results)
+        new_sams = OM.ascend(sams, results)
+        om_sams.append(new_sams)
+        om_results.append(results)
     
     if doprint:
-        print(dtk_sam3)
-        print(om_sam3)
+        print(dtk_sams[-1])
+        print(om_sams[-1])
     
     if doassert:
         try:
-            print('Asserting equality of third set of sample points...')
-            assert (om_sam3==dtk_sam3.to_numpy()).all()
+            print('Asserting equality (within rounding error) of the final set of sample points...')
+            assert sc.approx(om_sams[-1], dtk_sams[-1].to_numpy(), eps=1e-6).all()
             print('Passed!')
         except:
             raise
