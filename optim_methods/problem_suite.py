@@ -14,7 +14,6 @@ Version: 2019aug14
 
 import pylab as pl
 import sciris as sc
-eps = 1e-3 # To avoid log(0)
 
 __all__ = ['addnoise', 'make_norm', 'make_rosenbrock', 'make_hills', 'plot_problem']
 
@@ -214,8 +213,13 @@ def plot_problem(which='rosenbrock', ndims=3, noise=None, npts=None, startvals=N
     Z = alldata[:,2]
     O = alldata[:,3]
     if uselog:
-        if (O<eps).any(): O += eps - O.min() # Ensure it doesn't go negative
-        O = pl.log10(O)
+        if (O<=0).all():
+            signflipped = True
+            O = -O # Flip the sign
+        else:
+            signflipped = False
+        O = pl.log10(O) # Calculate the log
+        if signflipped: O = -O # Flip it back
     fig = pl.figure(figsize=(16,12))
     if ndims == 2:
         if force3d:
