@@ -77,23 +77,29 @@ class ShellStep(sc.prettyobj):
         self.func_args = func_args if func_args is not None else {}
         self.verbose   = verbose   if verbose   is not None else 2
         self.optimum   = optimum   if optimum   is not None else 'max'
-        if mp is None:
-            npars = sum(self.fittable)
-            vfrac = 0.01
-            r = get_r(npars, vfrac)
-            self.mp = sc.objdict({
-                        'mu_r':    r,
-                        'sigma_r': r/10,
-                        'N':       10,
-                        'center_repeats': 1,
-                        'rsquared_thresh': 0.5,
-                        })
+        self.set_mp(mp)
         self.samples = None
         self.results = None
         self.iteration = 0
         self.allcenters = sc.odict({self.key: self.x}) # Clunky way of creating a dict with a string key the iteration
         self.allsamples = sc.odict() # Initialize storing the value of x on each iteration
         self.allresults = sc.odict() # Initialize storing the results for each iteration
+        return
+    
+    def set_mp(self, mp):
+        ''' Calculate default metaparameters, and override with user-supplied values '''
+        if mp is None: mp = {}
+        npars = sum(self.fittable)
+        vfrac = 0.01
+        r = get_r(npars, vfrac)
+        self.mp = sc.objdict({
+                    'mu_r':    r,
+                    'sigma_r': r/10,
+                    'N':       10,
+                    'center_repeats': 1,
+                    'rsquared_thresh': 0.5,
+                    })
+        self.mp.update(mp)
         return
     
     @property
@@ -141,7 +147,7 @@ class ShellStep(sc.prettyobj):
             samples[:,p] = np.minimum(self.xmax[p], np.maximum(self.xmin[p], samples[:,p])) # Ensure all samples are within range
         
         self.samples = samples
-        self.allsamples[self.key] = samples
+        self.allsamples[self.key] = sc.dcp(samples)
         self.iteration += 1
         return self.samples
     
@@ -151,7 +157,7 @@ class ShellStep(sc.prettyobj):
         self.results = np.zeros(self.mp.N)
         for s,sample in enumerate(self.samples): # TODO: parallelize
             self.results[s] = self.func(sample, **self.func_args) # This is the time-consuming step!!
-        self.allresults[self.key] = self.results
+        self.allresults[self.key] = sc.dcp(self.results)
         return self.results
     
     
@@ -179,7 +185,7 @@ class ShellStep(sc.prettyobj):
         # Update values
         self.x[fitinds] = new_center # Reassign center
         self.x = np.minimum(self.xmax, np.maximum(self.xmin, self.x)) # Clamp
-        self.allcenters[self.key] = self.x
+        self.allcenters[self.key] = sc.dcp(self.x)
         self.sample_hypershell() # Calculate new hypershell and return
         return self.samples
     
@@ -191,7 +197,6 @@ class ShellStep(sc.prettyobj):
             if self.verbose>=1: print(f'Step {i+1} of {self.maxiters}')
             self.evaluate() # Evaluate the objective function
             self.step() # Calculate the next step
-            
         
         # Create output structure
         output = sc.objdict()

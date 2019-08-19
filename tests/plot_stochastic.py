@@ -1,5 +1,5 @@
 '''
-Plot the shellstep algorithm.
+Plot the stochastic descent algorithm.
 
 Version: 2019aug18
 '''
@@ -24,14 +24,14 @@ maxvals = [ 100.,  100.]
 
 # Perform the optimization
 objective_func = om.make_norm(noise=noise, optimum='min')
-output = om.shellstep(func=objective_func, 
+output = om.stochastic_descent.asd(function=objective_func, 
                       x=initial, 
                       xmin=minvals, 
                       xmax=maxvals,
                       optimum='min',
-                      mp={'mu_r':0.05, 'sigma_r':0.005},
-                      maxiters=50)
-samples = output.obj.allsamples # Make this easier 
+                      maxiters=50,
+                      verbose=2)
+samples = output.details.xvals # Make this easier 
 
 # Plot the objective function
 om.plot_problem(which='norm', ndims=2, noise=noise, optimum='min', uselog=False, minvals=minvals, maxvals=maxvals)
@@ -42,7 +42,7 @@ ax = pl.gca()
 dots = None
 for i in range(len(samples)):
     if dots is not None: dots.remove()
-    dots = pl.scatter(samples[i][:,0], samples[i][:,1], c=[[0.8]*3])
+    dots = pl.scatter(samples[i][0], samples[i][1], c=[[0.8]*3])
     ax.set_title(f'Iteration: {i+1}/{len(samples)}')
     pl.pause(delay)
 
