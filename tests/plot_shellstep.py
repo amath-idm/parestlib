@@ -8,9 +8,9 @@ import pylab as pl
 import optim_methods as om
 
 # Set noise level
-usenoise = True
+usenoise = False
 if usenoise:
-    noise = {'value':1.3, # Amount of noise to add -- defaults 0.3, 1, 1, 0
+    noise = {'value':0.3, # Amount of noise to add -- defaults 0.3, 1, 1, 0
              'gaussian':1, 
              'multiplicative':1,
              'verbose':0}
@@ -19,16 +19,16 @@ else:
 
 
 # Perform the optimization
-objective_func = om.make_norm(noise=noise, optimum='max')
+objective_func = om.make_rosenbrock(noise=noise, optimum='min')
 output = om.shellstep(func=objective_func, 
                       x=[1,1], 
                       xmin=[-1,-1], 
                       xmax=[1,1], 
-                      optimum='max')
+                      optimum='min')
 samples = output.obj.allsamples # Make this easier 
 
 # Plot the objective function
-om.plot_problem(which='norm', ndims=2, noise=noise, optimum='max', uselog=False)
+om.plot_problem(which='rosenbrock', ndims=2, noise=noise, optimum='min', uselog=False)
 
 # Animate the results
 delay = 1.0
