@@ -7,6 +7,8 @@ Version: 2019aug18
 import pylab as pl
 import optim_methods as om
 
+problem = 'rosenbrock'
+
 # Set noise level
 usenoise = 0
 if usenoise:
@@ -18,12 +20,22 @@ else:
     noise = None
 
 # Set the initial, minimum, and maximum values
-initial = [ 100.,   50.]
-minvals = [-100., -100.]
-maxvals = [ 100.,  100.]
+if problem == 'norm':
+    initial = [ 100.,   50.]
+    minvals = [-100., -100.]
+    maxvals = [ 100.,  100.]
+elif problem == 'rosenbrock':
+    initial = [-1., -1.]
+    minvals = [-1., -1.]
+    maxvals = [ 1.,  1.]
+
+# Create the problem
+if problem == 'norm':
+    objective_func = om.make_norm(noise=noise, optimum='min')
+elif problem == 'rosenbrock':
+    objective_func = om.make_rosenbrock(noise=noise, optimum='min')
 
 # Perform the optimization
-objective_func = om.make_norm(noise=noise, optimum='min')
 output = om.stochastic_descent.asd(function=objective_func, 
                       x=initial, 
                       xmin=minvals, 
@@ -34,7 +46,7 @@ output = om.stochastic_descent.asd(function=objective_func,
 samples = output.details.xvals # Make this easier 
 
 # Plot the objective function
-om.plot_problem(which='norm', ndims=2, noise=noise, optimum='min', uselog=False, minvals=minvals, maxvals=maxvals)
+om.plot_problem(which=problem, ndims=2, noise=noise, optimum='min', uselog=False, minvals=minvals, maxvals=maxvals)
 
 # Animate the results
 delay = 0.2
