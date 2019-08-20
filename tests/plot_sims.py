@@ -3,6 +3,7 @@ Plot the test problems in problem_suite.py.
 '''
 
 import pylab as pl
+import sciris as sc
 import optim_methods as om
 
 kwargs = dict(
@@ -20,8 +21,10 @@ pl.legend(('Sim 1', 'Sim 2', 'Sim 3'))
 pl.pause(0.3) # Has to be long enough for the figure to fully render
 
 # Plot the error function
+sc.tic()
 blowflies = om.make_blowflies()
-print('Simulating blowflies (takes 30-60 s...')
+print('Simulating blowflies (takes 30-60 s)...')
 om.plot_problem(which=blowflies, minvals=[0,0], maxvals=[80,2], **kwargs)
 pl.xlabel('r')
 pl.ylabel('σ')
+sc.toc()

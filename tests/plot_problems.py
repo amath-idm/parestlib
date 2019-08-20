@@ -10,7 +10,7 @@ kwargs = dict(
                    'gaussian':1, 
                    'multiplicative':1,
                    'verbose':0}, 
-        force3d = 0    # Whether to show 2D plots in 3D -- default 0
+        force3d = 1    # Whether to show 2D plots in 3D -- default 0
         )
 
 om.plot_problem(which='norm', ndims=2, **kwargs)

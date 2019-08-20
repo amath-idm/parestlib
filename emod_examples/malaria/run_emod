@@ -1,0 +1,3 @@
+#!/bin/bash
+echo "Running EMOD, takes ~20 s"
+emod --config input/config.json

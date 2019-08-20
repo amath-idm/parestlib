@@ -8,13 +8,14 @@ import pylab as pl
 import optim_methods as om
 
 # Choose the problem and method
-problem = ['norm', 'rosenbrock', 'hills'][0]
-method = ['shellstep', 'asd'][0]
+problem = ['norm', 'rosenbrock', 'hills'][2]
+method = ['shellstep', 'asd'][1]
+maxiters = 50
 
 # Set noise level
 usenoise = 0
 if usenoise:
-    noise = {'value':0.2, # Amount of noise to add -- defaults 0.3, 1, 1, 0
+    noise = {'value':0.3, # Amount of noise to add -- defaults 0.3, 1, 1, 0
              'gaussian':1, 
              'multiplicative':1,
              'verbose':0}
@@ -39,6 +40,7 @@ elif problem == 'hills':
 if   problem == 'norm':        objective_func = om.make_norm(noise=noise, optimum='min')
 elif problem == 'rosenbrock':  objective_func = om.make_rosenbrock(noise=noise, optimum='min')
 elif problem == 'hills':       objective_func = om.make_hills(noise=noise, optimum='min')
+
 # Plot the objective function
 om.plot_problem(which=problem, ndims=2, noise=noise, optimum='min', uselog=False, minvals=minvals, maxvals=maxvals)
 
@@ -50,8 +52,8 @@ if method == 'shellstep':
                           xmin=minvals, 
                           xmax=maxvals,
                           optimum='min',
-                          mp={'mu_r':0.05, 'sigma_r':0.005},
-                          maxiters=50)
+#                          mp={'mu_r':0.05, 'sigma_r':0.005},
+                          maxiters=maxiters)
     samples = output.obj.allsamples # Make this easier 
 elif method == 'asd':
     output = om.asd(function=objective_func, 
@@ -59,7 +61,7 @@ elif method == 'asd':
                     xmin=minvals, 
                     xmax=maxvals,
                     optimum='min',
-                    maxiters=50,
+                    maxiters=maxiters,
                     verbose=2)
     samples = output.details.xvals # Make this easier 
 
