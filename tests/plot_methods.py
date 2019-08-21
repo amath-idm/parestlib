@@ -54,7 +54,7 @@ if method == 'shellstep':
                           xmin=minvals, 
                           xmax=maxvals,
                           optimum='min',
-#                          mp={'mu_r':0.05, 'sigma_r':0.005},
+                          mp={'mu_r':0.0, 'sigma_r':0.05},
                           maxiters=maxiters)
     samples = output.obj.allsamples # Make this easier 
 elif method == 'asd':

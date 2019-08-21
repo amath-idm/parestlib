@@ -77,7 +77,7 @@ class ShellStep(sc.prettyobj):
         self.func_args = func_args if func_args is not None else {}
         self.verbose   = verbose   if verbose   is not None else 2
         self.optimum   = optimum   if optimum   is not None else 'max'
-        self.set_mp(mp)
+        self.set_mp(mp) # mp = metaparameters; can be None, 'sphere', 'shell', or a dict of values
         self.samples = None
         self.results = None
         self.iteration = 0
@@ -93,13 +93,17 @@ class ShellStep(sc.prettyobj):
         vfrac = 0.01
         r = get_r(npars, vfrac)
         self.mp = sc.objdict({
-                    'mu_r':    0*r,
+                    'mu_r':    0, # By default, use a sphere rather than a shell
                     'sigma_r': r,
                     'N':       50,
                     'center_repeats': 1,
                     'rsquared_thresh': 0.5,
                     })
-        self.mp.update(mp)
+        if mp == 'shell':
+            self.mp.mu_r = r
+            self.mp.sigma_r = r/10
+        else:
+            self.mp.update(mp)
         return
     
     @property
@@ -127,9 +131,6 @@ class ShellStep(sc.prettyobj):
             sn_nrm = np.linalg.norm(sn_rvs) # Calculate the norm of these samples
             radius = radius_normal.rvs() # Sample from the scaled distribution
             deviations[r,:] = radius/sn_nrm*sn_rvs # Deviation is the scaled sample adjusted by the rescaled standard sample
-        
-        print('HIIIIII')
-        print(deviations.tolist())
         
         # Calculate parameter samples
         samples = np.zeros((self.mp.N, npars)) # New samples
@@ -181,7 +182,6 @@ class ShellStep(sc.prettyobj):
             xranges = self.xmax - self.xmin
             den = np.sqrt(sum([xranges[p]**2 * c**2 for c,p in zip(coef, fitinds)]))
             scale = max(self.mp.mu_r, self.mp.sigma_r)
-            scale = np.linalg.norm(deviations, axis=1).mean()
             new_center = [xi + xranges[p]**2 * c*scale/den for xi, c, p in zip(old_center, coef, fitinds)]
         else: # It's a bad fit, just pick the best point
             max_idx = np.argmax(results)
