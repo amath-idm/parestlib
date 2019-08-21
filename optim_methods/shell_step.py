@@ -99,11 +99,16 @@ class ShellStep(sc.prettyobj):
                     'center_repeats': 1,
                     'rsquared_thresh': 0.5,
                     })
-        if mp == 'shell':
+        if mp == 'shell' or mp == {}: # By default, use a shell
             self.mp.mu_r = r
-            self.mp.sigma_r = r/10
-        else:
+            self.mp.sigma_r = r/10.
+        if mp == 'sphere': # Optionally use the default sphere
+            self.mp.mu_r = 0
+            self.mp.sigma_r = r # Use in place of mu_r
+        else: # Assume it's a dict
             self.mp.update(mp)
+        if self.mp.mu_r == 0 and self.mp.sigma_r == 0:
+            raise Exception('Either mu_r or sigma_r must be greater than 0')
         return
     
     @property
