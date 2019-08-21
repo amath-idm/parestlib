@@ -8,15 +8,15 @@ import pylab as pl
 import optim_methods as om
 
 # Choose the problem and method
-problem = ['norm', 'rosenbrock', 'hills'][0]
+problem = ['norm', 'rosenbrock', 'hills'][2]
 method = ['shellstep', 'asd'][0]
 maxiters = 50
 doplot = True
 
 # Set noise level
-usenoise = 0
+usenoise = 1
 if usenoise:
-    noise = {'value':0.3, # Amount of noise to add -- defaults 0.3, 1, 1, 0
+    noise = {'value':0.1, # Amount of noise to add -- defaults 0.3, 1, 1, 0
              'gaussian':1, 
              'multiplicative':1,
              'verbose':0}
@@ -70,7 +70,7 @@ elif method == 'asd':
 
 # Animate the results
 if doplot:
-    delay = 0.2
+    delay = 0.3
     ax = pl.gca()
     dots = None
     for i in range(len(samples)):

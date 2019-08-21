@@ -81,35 +81,47 @@ class ShellStep(sc.prettyobj):
         self.samples = None
         self.results = None
         self.iteration = 0
+        self.relstepsize = 1.0 # The current relative step size
         self.allcenters = sc.odict({self.key: self.x}) # Clunky way of creating a dict with a string key the iteration
         self.allsamples = sc.odict() # Initialize storing the value of x on each iteration
         self.allresults = sc.odict() # Initialize storing the results for each iteration
         return
     
-    def set_mp(self, mp):
-        ''' Calculate default metaparameters, and override with user-supplied values '''
-        if mp is None: mp = {}
+    
+    def set_mp(self, mp=None):
+        '''
+        Calculate default metaparameters, and override with user-supplied values.
+        With no arguments, returns the default metaparameters.
+        '''
         npars = sum(self.fittable)
         vfrac = 0.01
         r = get_r(npars, vfrac)
         self.mp = sc.objdict({
                     'mu_r':    0, # By default, use a sphere rather than a shell
                     'sigma_r': r,
-                    'N':       50,
+                    'N':       10,
                     'center_repeats': 1,
                     'rsquared_thresh': 0.5,
+                    'adaptation': {
+                            'step': np.sqrt(2),
+                            'min': 0.5,
+                            'max': 100}
                     })
-        if mp == 'shell' or mp == {}: # By default, use a shell
-            self.mp.mu_r = r
-            self.mp.sigma_r = r/10.
-        if mp == 'sphere': # Optionally use the default sphere
+        if mp == 'sphere' or mp is None: # By default, use a sphere of spread sigma_r = r
             self.mp.mu_r = 0
             self.mp.sigma_r = r # Use in place of mu_r
-        else: # Assume it's a dict
+        elif mp == 'shell': # Optionally, use a shell of radius mu_r = r and spread sigma_r = r/10
+            self.mp.mu_r = r
+            self.mp.sigma_r = r/10.
+        else: # Assume it's a dict and update
             self.mp.update(mp)
+        
         if self.mp.mu_r == 0 and self.mp.sigma_r == 0:
             raise Exception('Either mu_r or sigma_r must be greater than 0')
-        return
+        
+        self.mp = sc.objdict(self.mp) # Ensure it's an objdict for dot access (e.g. self.mp.mu_r)
+        return self.mp
+    
     
     @property
     def key(self):
@@ -118,16 +130,14 @@ class ShellStep(sc.prettyobj):
         
     
     def sample_hypershell(self):
-        '''
-        Sample points from a hypershell. See tests/test_optimtool.py for usage example.
-        '''
+        ''' Sample points from a hypershell. '''
         
         # Initialize
         fitinds = sc.findinds(self.fittable) # The indices of the fittable parameters
         nfittable = len(fitinds) # How many fittable parameters
         npars = len(self.x) # Total number of parameters
         standard_normal = st.norm(loc=0, scale=1) # Initialize a standard normal distribution
-        radius_normal = st.norm(loc=self.mp.mu_r, scale=self.mp.sigma_r) # And a scaled one
+        radius_normal = st.norm(loc=self.relstepsize*self.mp.mu_r, scale=self.relstepsize*self.mp.sigma_r) # And a scaled one
         
         # Calculate deviations
         deviations = np.zeros((self.mp.N, nfittable)) # Deviations from current center point
@@ -181,16 +191,27 @@ class ShellStep(sc.prettyobj):
         
         # Decide what type of step to take
         fitinds = sc.findinds(self.fittable)
+        xranges = self.xmax - self.xmin
+        old_center = self.x[fitinds]
         if mod_fit.rsquared > self.mp.rsquared_thresh: # The hyperplane is a good fit, calculate gradient descent
-            old_center = self.x[fitinds]
             coef = mod_fit.params[1:]  # Drop constant
-            xranges = self.xmax - self.xmin
             den = np.sqrt(sum([xranges[p]**2 * c**2 for c,p in zip(coef, fitinds)]))
-            scale = max(self.mp.mu_r, self.mp.sigma_r)
+            scale = self.relstepsize*max(self.mp.mu_r, self.mp.sigma_r)
             new_center = [xi + xranges[p]**2 * c*scale/den for xi, c, p in zip(old_center, coef, fitinds)]
+            if self.mp.adaptation:
+                self.relstepsize *= self.mp.adaptation['step']
+                self.relstepsize = np.median([self.mp.adaptation['min'], self.relstepsize, self.mp.adaptation['max']]) # Set limits
         else: # It's a bad fit, just pick the best point
             max_idx = np.argmax(results)
             new_center = self.samples[max_idx]
+            if self.mp.adaptation:
+                dist = np.linalg.norm((new_center - old_center)/xranges) # Normalized distance to the best point
+                if self.mp.mu_r: # Shell-based sampling
+                    self.relstepsize = dist/self.mp.mu_r # Get the ratio of the new distance and the current distance
+                else:
+                    self.relstepsize = dist/self.mp.sigma_r
+                self.relstepsize = np.median([self.mp.adaptation['min'], self.relstepsize, self.mp.adaptation['max']]) # Set limits
+            
         
         # Update values
         self.x[fitinds] = new_center # Reassign center
