@@ -105,7 +105,7 @@
         "Erythropoiesis_Anemia_Effect": 3.5,
         "Falciparum_MSP_Variants": 32,
         "Falciparum_Nonspecific_Types": 76,
-        "Falciparum_PfEMP1_Variants": 1070,
+        "Falciparum_PfEMP1_Variants": 1,
         "Family_Migration_Filename": "",
         "Family_Migration_Roundtrip_Duration": 1.0,
         "Fever_Detection_Threshold": 1,
