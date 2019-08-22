@@ -8,17 +8,21 @@ import pylab as pl
 import optim_methods as om
 
 # Choose the problem and method
-problem = ['norm', 'rosenbrock', 'hills'][0]
+problem = ['norm', 'rosenbrock', 'hills'][1]
 method = ['shellstep', 'asd'][0]
 maxiters = 50
-doplot = True
+doplot = 1
+uselog = 1
+geometry = 3
+randseed = 7159 #20935 # None # 37854
 
 # Set noise level
+pl.seed(randseed)
 usenoise = 1
 if usenoise:
-    noise = {'value':20, # Amount of noise to add -- defaults 0.3, 1, 1, 0
+    noise = {'value':0.5, # Amount of noise to add -- defaults 0.3, 1, 1, 0
              'gaussian':1, 
-             'multiplicative':0,
+             'multiplicative':1,
              'verbose':0}
 else:
     noise = None
@@ -44,7 +48,7 @@ elif problem == 'hills':       objective_func = om.make_hills(noise=noise, optim
 
 # Plot the objective function
 if doplot:
-    om.plot_problem(which=problem, ndims=2, noise=noise, optimum='min', uselog=False, minvals=minvals, maxvals=maxvals)
+    om.plot_problem(which=problem, ndims=2, noise=noise, optimum='min', uselog=uselog, minvals=minvals, maxvals=maxvals)
 
 
 # Perform the optimization
@@ -54,7 +58,13 @@ if method == 'shellstep':
                           xmin=minvals, 
                           xmax=maxvals,
                           optimum='min',
-                          mp=['sphere', 'shell', {'mu_r':0.0, 'sigma_r':0.02, 'N':50}][2], # 'sphere' or 'shell' or specify
+                          mp=['original',  # 0 -- geometry option
+                              'shell',     # 1
+                              'sphere',    # 2
+                              {'mu_r':0.2, # 3
+                               'sigma_r':0.02, 
+                               'N':50, 
+                               'useadaptation':1}][geometry],
                           maxiters=maxiters)
     samples = output.obj.allsamples # Make this easier 
 elif method == 'asd':
@@ -76,9 +86,9 @@ if doplot:
     for i in range(len(samples)):
         if dots is not None: dots.remove()
         if method == 'shellstep':
-            dots = pl.scatter(samples[i][:,0], samples[i][:,1], c=[[0.8]*3])
+            dots = pl.scatter(samples[i][:,0], samples[i][:,1], c=[(1,0.9,1)], marker='s')
         elif method == 'asd':
-            dots = pl.scatter(samples[i][0], samples[i][1], c=[[0.8]*3])
+            dots = pl.scatter(samples[i][0], samples[i][1], c=[(1,0.9,1)], marker='s')
         ax.set_title(f'Iteration: {i+1}/{len(samples)}')
         pl.xlim((minvals[0], maxvals[0]))
         pl.ylim((minvals[1], maxvals[1]))

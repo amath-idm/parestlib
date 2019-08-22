@@ -99,26 +99,32 @@ class ShellStep(sc.prettyobj):
         self.mp = sc.objdict({
                     'mu_r':    0, # By default, use a sphere rather than a shell
                     'sigma_r': r,
-                    'N':       10,
+                    'N':       20,
                     'center_repeats': 1,
                     'rsquared_thresh': 0.5,
+                    'useadaptation': True,
                     'adaptation': {
                             'step': np.sqrt(2),
-                            'min': 0.1,
-                            'max': 10}
+                            'min': 0.2,
+                            'max': 5}
                     })
-        if mp == 'sphere' or mp is None: # By default, use a sphere of spread sigma_r = r
-            self.mp.mu_r = 0
-            self.mp.sigma_r = r # Use in place of mu_r
-        elif mp == 'shell': # Optionally, use a shell of radius mu_r = r and spread sigma_r = r/10
+        if mp in ['shell', 'original'] or mp is None: # By default, use a shell of radius mu_r = r and spread sigma_r = r/10
             self.mp.mu_r = r
             self.mp.sigma_r = r/10.
+            if mp == 'original': # Turn off adaptation
+                self.mp.useadaptation = False
+        elif mp == 'sphere': # Optionally, use a sphere of spread sigma_r = r
+            self.mp.mu_r = 0
+            self.mp.sigma_r = r # Use in place of mu_r
+        
         else: # Assume it's a dict and update
             self.mp.update(mp)
         
         if self.mp.mu_r == 0 and self.mp.sigma_r == 0:
             raise Exception('Either mu_r or sigma_r must be greater than 0')
         
+        print('hi///')
+        print(self.mp.useadaptation)
         self.mp = sc.objdict(self.mp) # Ensure it's an objdict for dot access (e.g. self.mp.mu_r)
         return self.mp
     
@@ -198,19 +204,20 @@ class ShellStep(sc.prettyobj):
             den = np.sqrt(sum([xranges[p]**2 * c**2 for c,p in zip(coef, fitinds)]))
             scale = self.relstepsize*max(self.mp.mu_r, self.mp.sigma_r)
             new_center = [xi + xranges[p]**2 * c*scale/den for xi, c, p in zip(old_center, coef, fitinds)]
-            if self.mp.adaptation:
+            if self.mp.useadaptation:
                 self.relstepsize *= self.mp.adaptation['step']
                 self.relstepsize = np.median([self.mp.adaptation['min'], self.relstepsize, self.mp.adaptation['max']]) # Set limits
         else: # It's a bad fit, just pick the best point
             max_idx = np.argmax(results)
             new_center = self.samples[max_idx]
-            if self.mp.adaptation:
+            if self.mp.useadaptation:
                 self.relstepsize *= self.mp.adaptation['step']**(np.random.choice([-1,1]))
-#                dist = np.linalg.norm((new_center - old_center)/xranges) # Normalized distance to the best point
-#                if self.mp.mu_r: # Shell-based sampling
-#                    self.relstepsize = dist/self.mp.mu_r # Get the ratio of the new distance and the current distance
-#                else:
-#                    self.relstepsize = dist/self.mp.sigma_r
+                correction = 1.89 # Corrective factor so mean(log(abs(correction*randn()))) ≈ 0
+                dist = np.linalg.norm((new_center - old_center)/xranges) # Normalized distance to the best point
+                if self.mp.mu_r: # Shell-based sampling
+                    self.relstepsize = dist/self.mp.mu_r # Get the ratio of the new distance and the current distance
+                else:
+                    self.relstepsize = correction*dist/self.mp.sigma_r
                 self.relstepsize = np.median([self.mp.adaptation['min'], self.relstepsize, self.mp.adaptation['max']]) # Set limits
             
         
@@ -219,6 +226,7 @@ class ShellStep(sc.prettyobj):
         self.x = np.minimum(self.xmax, np.maximum(self.xmin, self.x)) # Clamp
         self.allcenters[self.key] = sc.dcp(self.x)
         self.sample_hypershell() # Calculate new hypershell and return
+        print(self.relstepsize)
         return self.samples
     
     
