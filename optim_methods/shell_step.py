@@ -104,8 +104,8 @@ class ShellStep(sc.prettyobj):
                     'rsquared_thresh': 0.5,
                     'adaptation': {
                             'step': np.sqrt(2),
-                            'min': 0.5,
-                            'max': 100}
+                            'min': 0.1,
+                            'max': 10}
                     })
         if mp == 'sphere' or mp is None: # By default, use a sphere of spread sigma_r = r
             self.mp.mu_r = 0
@@ -205,11 +205,12 @@ class ShellStep(sc.prettyobj):
             max_idx = np.argmax(results)
             new_center = self.samples[max_idx]
             if self.mp.adaptation:
-                dist = np.linalg.norm((new_center - old_center)/xranges) # Normalized distance to the best point
-                if self.mp.mu_r: # Shell-based sampling
-                    self.relstepsize = dist/self.mp.mu_r # Get the ratio of the new distance and the current distance
-                else:
-                    self.relstepsize = dist/self.mp.sigma_r
+                self.relstepsize *= self.mp.adaptation['step']**(np.random.choice([-1,1]))
+#                dist = np.linalg.norm((new_center - old_center)/xranges) # Normalized distance to the best point
+#                if self.mp.mu_r: # Shell-based sampling
+#                    self.relstepsize = dist/self.mp.mu_r # Get the ratio of the new distance and the current distance
+#                else:
+#                    self.relstepsize = dist/self.mp.sigma_r
                 self.relstepsize = np.median([self.mp.adaptation['min'], self.relstepsize, self.mp.adaptation['max']]) # Set limits
             
         

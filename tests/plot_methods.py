@@ -8,7 +8,7 @@ import pylab as pl
 import optim_methods as om
 
 # Choose the problem and method
-problem = ['norm', 'rosenbrock', 'hills'][2]
+problem = ['norm', 'rosenbrock', 'hills'][0]
 method = ['shellstep', 'asd'][0]
 maxiters = 50
 doplot = True
@@ -16,9 +16,9 @@ doplot = True
 # Set noise level
 usenoise = 1
 if usenoise:
-    noise = {'value':0.1, # Amount of noise to add -- defaults 0.3, 1, 1, 0
+    noise = {'value':20, # Amount of noise to add -- defaults 0.3, 1, 1, 0
              'gaussian':1, 
-             'multiplicative':1,
+             'multiplicative':0,
              'verbose':0}
 else:
     noise = None
@@ -54,7 +54,7 @@ if method == 'shellstep':
                           xmin=minvals, 
                           xmax=maxvals,
                           optimum='min',
-                          mp=['sphere', 'shell', {'mu_r':0.0, 'sigma_r':0.02}][2], # 'sphere' or 'shell' or specify
+                          mp=['sphere', 'shell', {'mu_r':0.0, 'sigma_r':0.02, 'N':50}][2], # 'sphere' or 'shell' or specify
                           maxiters=maxiters)
     samples = output.obj.allsamples # Make this easier 
 elif method == 'asd':
@@ -70,7 +70,7 @@ elif method == 'asd':
 
 # Animate the results
 if doplot:
-    delay = 0.3
+    delay = 0.1
     ax = pl.gca()
     dots = None
     for i in range(len(samples)):
@@ -80,6 +80,8 @@ if doplot:
         elif method == 'asd':
             dots = pl.scatter(samples[i][0], samples[i][1], c=[[0.8]*3])
         ax.set_title(f'Iteration: {i+1}/{len(samples)}')
+        pl.xlim((minvals[0], maxvals[0]))
+        pl.ylim((minvals[1], maxvals[1]))
         pl.pause(delay)
 
 print(f'Final parameters: {output.x}')
