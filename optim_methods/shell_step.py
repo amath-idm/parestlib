@@ -104,9 +104,9 @@ class ShellStep(sc.prettyobj):
                     'rsquared_thresh': 0.5,
                     'useadaptation': True,
                     'adaptation': {
-                            'step': np.sqrt(2),
-                            'min': 0.5,
-                            'max': 2.0}
+                            'step': 1.1,
+                            'min': 0.1,
+                            'max': 3.0}
                     })
         if mp in ['shell', 'original'] or mp is None: # By default, use a shell of radius mu_r = r and spread sigma_r = r/10
             self.mp.mu_r = r
@@ -206,6 +206,7 @@ class ShellStep(sc.prettyobj):
             new_center = [xi + xranges[p]**2 * c*scale/den for xi, c, p in zip(old_center, coef, fitinds)]
             if self.mp.useadaptation:
                 print('DOING !!!!')
+                print(mod_fit.rsquared)
                 print(self.relstepsize, self.mp.mu_r, self.mp.adaptation['step'])
                 self.relstepsize *= self.mp.adaptation['step']
                 self.relstepsize = np.median([self.mp.adaptation['min'], self.relstepsize, self.mp.adaptation['max']]) # Set limits
@@ -215,23 +216,25 @@ class ShellStep(sc.prettyobj):
             if self.mp.useadaptation:
                 print('DOING B')
                 print(self.relstepsize, self.mp.mu_r)
-                self.relstepsize *= self.mp.adaptation['step']**(np.random.choice([-1,1]))
-#                correction = 1.89 # Corrective factor so mean(log(abs(correction*randn()))) ≈ 0
-#                dist = np.linalg.norm((new_center - old_center)/xranges) # Normalized distance to the best point
-#                if self.mp.mu_r: # Shell-based sampling
-#                    print('DOING A')
-#                    print(self.relstepsize, dist, self.mp.mu_r)
-#                    ratio = dist/self.mp.mu_r
-#                    if ratio > self.mp.adaptation['min']:
-#                        self.relstepsize = ratio # Get the ratio of the new distance and the current distance
-#                    else:
-#                        self.relstepsize /= 
-#                else:
-#                    print('DOING B')
-#                    print(self.relstepsize, dist, self.mp.sigma_r, correction)
-#                    ratio = correction*dist/self.mp.sigma_r
-#                    if ratio > self.mp.adaptation['min']:
-#                        self.relstepsize = ratio
+#                self.relstepsize *= self.mp.adaptation['step']**(np.random.choice([-1,1]))
+                correction = 1.89 # Corrective factor so mean(log(abs(correction*randn()))) ≈ 0
+                dist = np.linalg.norm((new_center - old_center)/xranges) # Normalized distance to the best point
+                if self.mp.mu_r: # Shell-based sampling
+                    print('DOING A')
+                    print(self.relstepsize, dist, self.mp.mu_r)
+                    ratio = dist/self.mp.mu_r
+                    if ratio > self.mp.adaptation['min']:
+                        self.relstepsize = ratio # Get the ratio of the new distance and the current distance
+                    else:
+                        self.relstepsize /= self.mp.adaptation['step']
+                else:
+                    print('DOING B')
+                    print(self.relstepsize, dist, self.mp.sigma_r, correction)
+                    ratio = correction*dist/self.mp.sigma_r
+                    if ratio > self.mp.adaptation['min']:
+                        self.relstepsize = ratio
+                    else:
+                        self.relstepsize /= self.mp.adaptation['step']
                 self.relstepsize = np.median([self.mp.adaptation['min'], self.relstepsize, self.mp.adaptation['max']]) # Set limits
             
         
