@@ -8,17 +8,17 @@ import pylab as pl
 import optim_methods as om
 
 # Choose the problem and method
-problem = ['norm', 'rosenbrock', 'hills'][1]
+problem = ['norm', 'rosenbrock', 'hills'][0]
 method = ['shellstep', 'asd'][0]
 maxiters = 50
 doplot = 1
 uselog = 1
-geometry = 3
-randseed = 7159 #20935 # None # 37854
+geometry = 1
+randseed = None #7159 #20935 # None # 37854
 
 # Set noise level
 pl.seed(randseed)
-usenoise = 1
+usenoise = 0
 if usenoise:
     noise = {'value':0.5, # Amount of noise to add -- defaults 0.3, 1, 1, 0
              'gaussian':1, 
