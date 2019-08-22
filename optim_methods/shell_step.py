@@ -105,7 +105,7 @@ class ShellStep(sc.prettyobj):
                     'useadaptation': True,
                     'adaptation': {
                             'step': 1.1,
-                            'min': 0.1,
+                            'min': 0.3,
                             'max': 3.0}
                     })
         if mp in ['shell', 'original'] or mp is None: # By default, use a shell of radius mu_r = r and spread sigma_r = r/10
@@ -223,7 +223,7 @@ class ShellStep(sc.prettyobj):
                     print('DOING A')
                     print(self.relstepsize, dist, self.mp.mu_r)
                     ratio = dist/self.mp.mu_r
-                    if ratio > self.mp.adaptation['min']:
+                    if 1:#ratio > self.mp.adaptation['min']:
                         self.relstepsize = ratio # Get the ratio of the new distance and the current distance
                     else:
                         self.relstepsize /= self.mp.adaptation['step']
@@ -231,7 +231,7 @@ class ShellStep(sc.prettyobj):
                     print('DOING B')
                     print(self.relstepsize, dist, self.mp.sigma_r, correction)
                     ratio = correction*dist/self.mp.sigma_r
-                    if ratio > self.mp.adaptation['min']:
+                    if 1:#ratio > self.mp.adaptation['min']:
                         self.relstepsize = ratio
                     else:
                         self.relstepsize /= self.mp.adaptation['step']
