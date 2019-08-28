@@ -1,20 +1,22 @@
 '''
 Plot the stochastic descent algorithm.
 
-Version: 2019aug18
+Version: 2019aug22
 '''
 
 import pylab as pl
+import sciris as sc
 import optim_methods as om
 
 # Choose the problem and method
-problem  = ['norm', 'rosenbrock', 'hills'][1]
-method   = ['shellstep', 'asd'][0]
-maxiters = 50
-doplot   = 1
-uselog   = 1
-geometry = 0#3
-randseed = 93854 #7159 #20935 # None # 37854
+problem   = ['norm', 'rosenbrock', 'hills'][1]
+method    = ['shellstep', 'asd'][0]
+maxiters  = 50
+uselog    = 1
+geometry  = 0#3
+randseed  = 93854 #7159 #20935 # None # 37854
+doplot    = 0
+savemovie = 0
 
 # Set noise level
 pl.seed(randseed)
@@ -80,19 +82,28 @@ elif method == 'asd':
 
 # Animate the results
 if doplot:
+    frames = []
     delay = 0.1
     ax = pl.gca()
     dots = None
     for i in range(len(samples)):
-        if dots is not None: dots.remove()
+        if not savemovie and dots is not None:
+            dots.remove()
         if method == 'shellstep':
             dots = pl.scatter(samples[i][:,0], samples[i][:,1], c=[(1,0.9,1)], marker='s')
         elif method == 'asd':
             dots = pl.scatter(samples[i][0], samples[i][1], c=[(1,0.9,1)], marker='s')
-        ax.set_title(f'Iteration: {i+1}/{len(samples)}')
+        if not savemovie:
+            title = ax.text(f'Iteration: {i+1}/{len(samples)}')
+        else:
+            title = pl.text(0.5, 1.01, f'Iteration {i+1}/{len(samples)}', transform=ax.transAxes, horizontalalignment='center') # Unfortunately pl.title() can't be dynamically updated
         pl.xlim((minvals[0], maxvals[0]))
         pl.ylim((minvals[1], maxvals[1]))
+        frames.append((dots, title))
         pl.pause(delay)
+
+if savemovie:
+    sc.savemovie(frames, f'{problem}-{method}_adaptive.mp4')
 
 print(f'Final parameters: {output.x}')
 print(f'Final result: {output.fval}')
