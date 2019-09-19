@@ -28,3 +28,6 @@ om.plot_problem(which=blowflies, minvals=[0,0], maxvals=[80,2], **kwargs)
 pl.xlabel('r')
 pl.ylabel('σ')
 sc.toc()
+
+# Ensure it's being shown
+pl.show()

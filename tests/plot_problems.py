@@ -2,6 +2,7 @@
 Plot the test problems in problem_suite.py.
 '''
 
+import pylab as pl
 import optim_methods as om
 
 kwargs = dict(
@@ -18,5 +19,7 @@ om.plot_problem(which='norm', ndims=3, **kwargs)
 om.plot_problem(which='rosenbrock', ndims=2, **kwargs)
 om.plot_problem(which='rosenbrock', ndims=3, **kwargs)
 om.plot_problem(which='hills', ndims=2, minvals=[0,0], maxvals=[5,5], **kwargs)
+pl.show()
+
 
 print('Done.')

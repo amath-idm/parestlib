@@ -13,9 +13,9 @@ problem   = ['norm', 'rosenbrock', 'hills'][1]
 method    = ['shellstep', 'asd'][0]
 maxiters  = 50
 uselog    = 1
-geometry  = 0#3
+geometry  = 3# 0#3
 randseed  = 93854 #7159 #20935 # None # 37854
-doplot    = 0
+doplot    = 1
 savemovie = 0
 
 # Set noise level
@@ -94,7 +94,7 @@ if doplot:
         elif method == 'asd':
             dots = pl.scatter(samples[i][0], samples[i][1], c=[(1,0.9,1)], marker='s')
         if not savemovie:
-            title = ax.text(f'Iteration: {i+1}/{len(samples)}')
+            title = pl.title(f'Iteration: {i+1}/{len(samples)}')
         else:
             title = pl.text(0.5, 1.01, f'Iteration {i+1}/{len(samples)}', transform=ax.transAxes, horizontalalignment='center') # Unfortunately pl.title() can't be dynamically updated
         pl.xlim((minvals[0], maxvals[0]))

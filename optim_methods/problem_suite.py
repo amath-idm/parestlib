@@ -248,5 +248,7 @@ def plot_problem(which='rosenbrock', ndims=3, noise=None, npts=None, startvals=N
             O2 = pl.log10(trajectory[:,3])
             ax = sc.scatter3d(X2, Y2, Z2, O2, fig=fig, plotkwargs={'alpha':1.0, 'marker':'d'})
             ax = sc.plot3d(X2, Y2, Z2, fig=fig, plotkwargs={'c':(0,0,0), 'lw':3})
+    
+    return fig
 
 
