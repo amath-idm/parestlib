@@ -23,7 +23,7 @@ startvals = {
 methods = {
         'ASD':       om.asd,
         'BSD':       om.bsd,
-        'OptimTool': om.optimtool
+        'ShellStep': om.shellstep,
         }
 
 repeats = 3
