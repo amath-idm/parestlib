@@ -31,7 +31,7 @@ results = calib.run(how=how, n_iters=n_iters)
 
 #%% Internal implementation
 
-import optim_methods as om
+import parestlib as om
 from . import em_simulations as ems
 from . import em_experiments as ees
 

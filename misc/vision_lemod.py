@@ -12,7 +12,7 @@ sim.calibrate()
 
 #%% Internal implementation
 
-import optim_methods as om
+import parestlib as om
 
 def calibrate(self, n_iters=100):
 

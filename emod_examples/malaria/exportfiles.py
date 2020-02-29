@@ -12,6 +12,6 @@ from simtools.SetupParser import SetupParser
 
 SetupParser.init()
 cb = DTKConfigBuilder.from_defaults('MALARIA_SIM')
-cb.dump_files('/u/cliffk/idm/optim_methods/emod_examples/malaria/input')
+cb.dump_files('/u/cliffk/idm/parestlib/emod_examples/malaria/input')
 
 print('Done')
