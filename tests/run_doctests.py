@@ -4,7 +4,7 @@ use this syntax:
     
     import os
     import sciris as sc
-    testdir = os.path.join(os.pardir, 'optim_methods')
+    testdir = os.path.join(os.pardir, 'parestlib')
     filenames = sc.getfilelist(folder=testdir, ext='py')
     for filename in filenames:
         doctest.testfile(filename, verbose=True)
@@ -13,7 +13,7 @@ Version: 2019aug16
 '''
 
 import doctest
-import optim_methods as om
+import parestlib as om
 import sciris as sc
 
 # See __init__.py

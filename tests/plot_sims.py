@@ -4,7 +4,7 @@ Plot the test problems in problem_suite.py.
 
 import pylab as pl
 import sciris as sc
-import optim_methods as om
+import parestlib as om
 
 torun = [
         'blowflies',

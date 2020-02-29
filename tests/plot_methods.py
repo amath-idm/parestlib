@@ -6,7 +6,7 @@ Version: 2019aug22
 
 import pylab as pl
 import sciris as sc
-import optim_methods as om
+import parestlib as om
 
 # Choose the problem and method
 problem   = ['norm', 'rosenbrock', 'hills'][1]

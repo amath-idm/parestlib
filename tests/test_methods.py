@@ -8,7 +8,7 @@ Version: 2019aug13
 '''
 
 import sciris as sc
-import optim_methods as om
+import parestlib as om
 
 problems = [
         'norm',

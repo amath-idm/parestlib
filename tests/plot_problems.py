@@ -3,7 +3,7 @@ Plot the test problems in problem_suite.py.
 '''
 
 import pylab as pl
-import optim_methods as om
+import parestlib as om
 
 kwargs = dict(
         uselog  = 1,   # Whether or not to use a logarithmic scale -- default 1
