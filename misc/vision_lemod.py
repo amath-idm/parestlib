@@ -17,8 +17,7 @@ import optim_methods as om
 def calibrate(self, n_iters=100):
 
     def objective_fn(x):
-        self.pars_from_vec(x)
-        results = self.run()
+        results = self.run(pars=x)
         mismatch = 0
         for i in len(self.data):
             mismatch += ((results[i] - self.data[i])**2).sum()
