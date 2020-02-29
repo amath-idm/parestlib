@@ -12,12 +12,12 @@ CLASSIFIERS = [
 ]
 
 setup(
-    name="optim_methods",
-    version="0.1",
-    author="Cliff Kerr",
-    author_email="cliff@thekerrlab.com",
-    description="Optimization methods for IDM",
-    keywords=["stochastic", "optimization"],
+    name="parestlib",
+    version="0.2",
+    author="Cliff Kerr, Daniel Klein",
+    author_email="ckerr@idmod.org",
+    description="Parameter estimation library",
+    keywords=["parameter", "estimation", "posterior", "sampling", "stochastic", "optimization"],
     platforms=["OS Independent"],
     classifiers=CLASSIFIERS,
     packages=find_packages(),
