@@ -15,7 +15,7 @@ import pylab as pl
 import pandas as pd
 import sciris as sc
 from calibtool.algorithms.OptimTool import OptimTool
-import optim_methods as om
+import parestlib as om
 
 # Set parameters
 randseed = 5845235
@@ -99,7 +99,7 @@ def create_DTK():
 
 
 class create_OM(sc.prettyobj):
-    ''' Wrapper class for optim_methods functions, for easier testing '''
+    ''' Wrapper class for parestlib functions, for easier testing '''
     
     def __init__(self):
         self.x        = pl.array([1.75, 0.65, 1500, 25])
@@ -204,7 +204,7 @@ if 'iterate' in torun:
         dtk_sams.append(new_sams)
         dtk_results.append(results)
     
-    # optim_methods
+    # parestlib
     pl.seed(randseed)
     om_sam = OM.sample_hypersphere() 
     om_sams = [om_sam]

@@ -8,7 +8,7 @@ Version: 2019aug13
 '''
 
 import sciris as sc
-import optim_methods as om
+import parestlib as om
 
 problems = [
         'norm',
@@ -23,7 +23,7 @@ startvals = {
 methods = {
         'ASD':       om.asd,
         'BSD':       om.bsd,
-        'OptimTool': om.optimtool
+        'ShellStep': om.shellstep,
         }
 
 repeats = 3

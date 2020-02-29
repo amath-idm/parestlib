@@ -4,7 +4,7 @@ Plot the test problems in problem_suite.py.
 
 import pylab as pl
 import sciris as sc
-import optim_methods as om
+import parestlib as pe
 
 torun = [
         'blowflies',
@@ -20,17 +20,17 @@ if 'blowflies' in torun:
     
     # Plot the blowfly simulation
     fig1 = pl.figure(figsize=(16,12))
-    output1 = om.plot_blowflies(fig=fig1)
-    output2 = om.plot_blowflies(fig=fig1)
-    output3 = om.plot_blowflies(fig=fig1)
+    output1 = pe.plot_blowflies(fig=fig1)
+    output2 = pe.plot_blowflies(fig=fig1)
+    output3 = pe.plot_blowflies(fig=fig1)
     pl.legend(('Sim 1', 'Sim 2', 'Sim 3'))
     pl.pause(0.3) # Has to be long enough for the figure to fully render
     
     # Plot the error function
     sc.tic()
-    blowflies = om.make_blowflies()
+    blowflies = pe.make_blowflies()
     print('Simulating blowflies (takes 30-60 s)...')
-    om.plot_problem(which=blowflies, minvals=[0,0], maxvals=[80,2], **kwargs)
+    pe.plot_problem(which=blowflies, minvals=[0,0], maxvals=[80,2], **kwargs)
     pl.xlabel('r')
     pl.ylabel('σ')
     sc.toc()
@@ -40,5 +40,5 @@ if 'blowflies' in torun:
 
 
 if 'SIR' in torun:
-    om.plot_SIR()
+    pe.plot_SIR()
     

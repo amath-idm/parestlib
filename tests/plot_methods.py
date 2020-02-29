@@ -6,7 +6,7 @@ Version: 2019aug22
 
 import pylab as pl
 import sciris as sc
-import optim_methods as om
+import parestlib as pe
 
 # Choose the problem and method
 problem   = ['norm', 'rosenbrock', 'hills'][1]
@@ -44,18 +44,18 @@ elif problem == 'hills':
     maxvals = [5.0, 5.0]
 
 # Create the problem
-if   problem == 'norm':        objective_func = om.make_norm(noise=noise, optimum='min')
-elif problem == 'rosenbrock':  objective_func = om.make_rosenbrock(noise=noise, optimum='min')
-elif problem == 'hills':       objective_func = om.make_hills(noise=noise, optimum='min')
+if   problem == 'norm':        objective_func = pe.make_norm(noise=noise, optimum='min')
+elif problem == 'rosenbrock':  objective_func = pe.make_rosenbrock(noise=noise, optimum='min')
+elif problem == 'hills':       objective_func = pe.make_hills(noise=noise, optimum='min')
 
 # Plot the objective function
 if doplot:
-    om.plot_problem(which=problem, ndims=2, noise=noise, optimum='min', uselog=uselog, minvals=minvals, maxvals=maxvals)
+    pe.plot_problem(which=problem, ndims=2, noise=noise, optimum='min', uselog=uselog, minvals=minvals, maxvals=maxvals)
 
 
 # Perform the optimization
 if method == 'shellstep':
-    output = om.shellstep(func=objective_func, 
+    output = pe.shellstep(func=objective_func, 
                           x=initial, 
                           xmin=minvals, 
                           xmax=maxvals,
@@ -70,7 +70,7 @@ if method == 'shellstep':
                           maxiters=maxiters)
     samples = output.obj.allsamples # Make this easier 
 elif method == 'asd':
-    output = om.asd(function=objective_func, 
+    output = pe.asd(function=objective_func, 
                     x=initial, 
                     xmin=minvals, 
                     xmax=maxvals,

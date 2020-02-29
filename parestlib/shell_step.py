@@ -6,7 +6,7 @@ The naming convention is to distinguish the module (shell_step) from the functio
 
 Basic usage is:
     
-    import optim_methods as om
+    import parestlib as om
     output = om.shellstep(func, x, xmin, xmax)
 
 Version: 2019aug18
@@ -40,7 +40,7 @@ def get_r(npars, vfrac):
     
     Examples
     --------
-    >>> import optim_methods as om
+    >>> import parestlib as om
     >>> om.get_r(npars=4, vfrac=0.1)
     0.8381416784196289
     >>> om.get_r(npars=100, vfrac=0.1)
