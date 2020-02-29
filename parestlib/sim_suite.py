@@ -10,7 +10,7 @@ import pylab as pl
 import scipy.signal as si
 import scipy.stats as st
 import sciris as sc
-import optim_methods as om
+import parestlib as om
 
 __all__ = ['blowfly_sim', 'make_blowflies', 'plot_blowflies', 'SIR_sim', 'make_SIR', 'plot_SIR']
 
@@ -53,7 +53,7 @@ def blowfly_sim(pars=None, initpop=None, npts=None):
     
     Example
     -------
-    import optim_methods as om
+    import parestlib as om
     y = om.blowfly_sim(pars=(pl.exp(3.8), 0.7), initpop=1, npts=1000)
     
     '''
