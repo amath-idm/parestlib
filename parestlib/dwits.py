@@ -9,7 +9,7 @@ Basic usage is:
     import parestlib as pe
     output = pe.dwits(func, x, xmin, xmax)
 
-Version: 2020feb29
+Version: 2020mar01
 '''
 
 import numpy as np
@@ -26,119 +26,40 @@ class DWITS(sc.prettyobj):
     Version: 2020feb29
     '''
     
-    def __init__(self, func, x, xmin, xmax, fittable=None, mp=None, maxiters=None, optimum=None, func_args=None, verbose=None):
+    def __init__(self, func, x, xmin, xmax, npoints=None, acceptance=None, nbootstrap=None, maxiters=None, optimum=None, func_args=None, verbose=None):
+        
+        # Handle required arguments
         self.func = func
         self.x    = np.array(x)
         self.xmin = np.array(xmin)
         self.xmax = np.array(xmax)
-        self.fittable  = np.array(fittable) if fittable is not None else np.ones(len(x)) # Set everything to be fittable by default
-        self.maxiters  = maxiters  if maxiters  is not None else 10 # Set iterations to be 10 by default
-        self.func_args = func_args if func_args is not None else {}
-        self.verbose   = verbose   if verbose   is not None else 2
-        self.optimum   = optimum   if optimum   is not None else 'max'
-        self.set_mp(mp) # mp = metaparameters; can be None, 'sphere', 'shell', or a dict of values
-        self.samples = None
-        self.results = None
+        
+        # Handle optional arguments
+        self.npoints     = npoints     if npoints    is not None else 100
+        self.acceptance  = acceptance  if acceptance is not None else 0.5
+        self.nbootstrap  = nbootstrap  if nbootstrap is not None else 10
+        self.maxiters    = maxiters    if maxiters   is not None else 50 
+        self.optimum     = optimum     if optimum    is not None else 'min'
+        self.func_args   = func_args   if func_args  is not None else {}
+        self.verbose     = verbose     if verbose    is not None else 2
+        
+        # Set up results
         self.iteration = 0
-        self.relstepsize = 1.0 # The current relative step size
-        self.allcenters = sc.odict({self.key: self.x}) # Clunky way of creating a dict with a string key the iteration
-        self.allsamples = sc.odict() # Initialize storing the value of x on each iteration
-        self.allresults = sc.odict() # Initialize storing the results for each iteration
+        self.npars     = len(x) # Number of parameters being fit
+        self.nbetapars = 4 # Number of parameters in the beta distribution
+        self.betapars = np.zeros((self.npars, self.nbetapars)) # Each parameter is defined by a 4-metaparameter beta distribution
+        self.samples  = np.zeros((self.npoints, self.npars)) # Array of parameter values
+        self.results  = np.zeros(self.npoints) # For storing the results object (see optimize())
+        self.allbetapars = [] # For storing history of the beta-distribution parameters
+        self.allsamples  = [] # For storing all points
+        self.allresults  = [] # For storing all results
+        
         return
-    
-    
-    def set_mp(self, mp=None):
-        '''
-        Calculate default metaparameters, and override with user-supplied values.
-        With no arguments, returns the default metaparameters.
-        '''
-        npars = sum(self.fittable)
-        vfrac = 0.01
-        r = get_r(npars, vfrac)
-        self.mp = sc.objdict({
-                    'mu_r':    0, # By default, use a sphere rather than a shell
-                    'sigma_r': r,
-                    'N':       20,
-                    'center_repeats': 1,
-                    'rsquared_thresh': 0.5,
-                    'useadaptation': True,
-                    'adaptation': {
-                            'step': np.sqrt(2),
-                            'min': 0.2,
-                            'max': 5}
-                    })
-        if mp in ['shell', 'original'] or mp is None: # By default, use a shell of radius mu_r = r and spread sigma_r = r/10
-            self.mp.mu_r = r
-            self.mp.sigma_r = r/10.
-            if mp == 'original': # Turn off adaptation
-                self.mp.useadaptation = False
-        elif mp == 'sphere': # Optionally, use a sphere of spread sigma_r = r
-            self.mp.mu_r = 0
-            self.mp.sigma_r = r # Use in place of mu_r
-        
-        else: # Assume it's a dict and update
-            self.mp.update(mp)
-        
-        if self.mp.mu_r == 0 and self.mp.sigma_r == 0:
-            raise Exception('Either mu_r or sigma_r must be greater than 0')
-        
-        print('hi///')
-        print(self.mp.useadaptation)
-        self.mp = sc.objdict(self.mp) # Ensure it's an objdict for dot access (e.g. self.mp.mu_r)
-        return self.mp
-    
-    
-    @property
-    def key(self):
-        ''' Use the current iteration number, as a string, to set the key for the dicts '''
-        return str(self.iteration)
-        
-    
-    def sample_hypershell(self):
-        ''' Sample points from a hypershell. '''
-        
-        # Initialize
-        fitinds = sc.findinds(self.fittable) # The indices of the fittable parameters
-        nfittable = len(fitinds) # How many fittable parameters
-        npars = len(self.x) # Total number of parameters
-        standard_normal = st.norm(loc=0, scale=1) # Initialize a standard normal distribution
-        radius_normal = st.norm(loc=self.relstepsize*self.mp.mu_r, scale=self.relstepsize*self.mp.sigma_r) # And a scaled one
-        
-        # Calculate deviations
-        deviations = np.zeros((self.mp.N, nfittable)) # Deviations from current center point
-        for r in range(self.mp.N): # Loop over repeats
-            sn_rvs = standard_normal.rvs(size=nfittable) # Sample from the standard distribution
-            sn_nrm = np.linalg.norm(sn_rvs) # Calculate the norm of these samples
-            radius = radius_normal.rvs() # Sample from the scaled distribution
-            deviations[r,:] = radius/sn_nrm*sn_rvs # Deviation is the scaled sample adjusted by the rescaled standard sample
-        
-        # Calculate parameter samples
-        samples = np.zeros((self.mp.N, npars)) # New samples
-        for p in range(npars): # Loop over all parameters
-            if self.fittable[p]:
-                ind = sc.findinds(fitinds==p)[0] # Convert the parameter index back to the fittable parameter index
-                delta = deviations[:,ind] * (self.xmax[p] - self.xmin[p]) # Scale the deviation by the allowed parameter range
-            else:
-                delta = 0 # If not fittable, set to zer
-            samples[:,p] = self.x[p] + delta # Set new parameter value
-        
-        # Overwrite with center repeats
-        for r in range(self.mp.center_repeats):
-            samples[r,:] = self.x # Just replace with the current center
-        
-        # Clamp
-        for p in range(npars):
-            samples[:,p] = np.minimum(self.xmax[p], np.maximum(self.xmin[p], samples[:,p])) # Ensure all samples are within range
-        
-        self.samples = samples
-        self.allsamples[self.key] = sc.dcp(samples)
-        self.iteration += 1
-        return self.samples
     
     
     def evaluate(self):
         ''' Actually evaluate the objective function '''
-        self.results = np.zeros(self.mp.N)
+        self.results = np.zeros(self.npoints)
         for s,sample in enumerate(self.samples): # TODO: parallelize
             self.results[s] = self.func(sample, **self.func_args) # This is the time-consuming step!!
         self.allresults[self.key] = sc.dcp(self.results)
