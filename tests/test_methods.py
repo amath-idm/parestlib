@@ -35,7 +35,7 @@ noisevals = [0, 0.05] # For noise values of larger than 0.05, standard ASD break
 results = []
 for method,optim_func in methods.items():
     for problem in problems:
-        sc.heading(f'Running {method} on {problem}()')
+        sc.heading(f'Running {method}() on {problem}')
         for n,noise in enumerate(noisevals):
             
             # Define the problem
