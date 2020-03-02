@@ -59,7 +59,7 @@ class DWITS(sc.prettyobj):
     
     
     @staticmethod
-    def beta_pdf(xvec, pars):
+    def beta_pdf(pars, xvec):
         ''' Shortcut to the scipy.stats beta PDF function -- not used currently, but nice to have '''
         if len(pars) != 4:
             raise Exception(f'Beta distribution parameters must have length 4, not {len(pars)}')
@@ -68,7 +68,7 @@ class DWITS(sc.prettyobj):
     
     
     @staticmethod
-    def beta_rvs(n, pars):
+    def beta_rvs(pars, n):
         ''' Shortcut to the scipy.stats beta random variates function '''
         if len(pars) != 4:
             raise Exception(f'Beta distribution parameters must have length 4, not {len(pars)}')
@@ -108,8 +108,8 @@ class DWITS(sc.prettyobj):
     
     def draw_samples(self):
         ''' Choose samples from the (current) prior distribution '''
-        # for p in range(self.npars): # Loop over the parameters
-        #     self.samples[:,p] = 
+        for p in range(self.npars): # Loop over the parameters
+            self.samples[:,p] = self.beta_rvs(pars=self.priorpars[p,:], n=self.npoints)
         
         return self.samples
     
