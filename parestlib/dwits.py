@@ -48,6 +48,7 @@ class DWITS(sc.prettyobj):
         self.npars     = len(x) # Number of parameters being fit
         self.nbetapars = 4 # Number of parameters in the beta distribution
         self.betapars = np.zeros((self.npars, self.nbetapars)) # Each parameter is defined by a 4-metaparameter beta distribution
+        self.initialize_betas()
         self.samples  = np.zeros((self.npoints, self.npars)) # Array of parameter values
         self.results  = np.zeros(self.npoints) # For storing the results object (see optimize())
         self.allbetapars = [] # For storing history of the beta-distribution parameters
@@ -57,12 +58,41 @@ class DWITS(sc.prettyobj):
         return
     
     
+    def initialize_betas(self, prior='best', width=0.5):
+        ''' Create the initial beta distributions '''
+        if isinstance(prior, type(np.array([]))):
+            prior_shape = (self.npars, self.nbetapars)
+            if prior.shape != prior_shape:
+                raise Exception(f'Shape of prior is wrong: {prior.shape} instead of {prior_shape}')
+            self.betapars = prior # Use supplied parameters directly
+            return
+        for p in range(self.npars): # Loop over th eparameters
+            xloc   = self.xmin[p]
+            xscale = self.xmax[p] - xloc
+            if prior == 'uniform': # Just use a uniform prior from min to max
+                alpha  = 1
+                beta   = 1
+            elif prior == 'best': # Use the best guess parameter value to create the distribution
+                best = (self.x[p] - xloc)/xscale # Normalize best guess
+                swap = False # Check if values need to be swapped since the distribution is not symmetric about 0.5
+                if best > 0.5:
+                    best = 1 - best
+                    swap = True
+                alpha = 1.0/width
+                beta = alpha*(1.0-best)/best # Use best as the mean
+                if swap:
+                    alpha, beta = beta, alpha # If we swapped earlier, swap back now
+            else:
+                raise NotImplementedError('Currently, only "uniform" and "best" priors are supported')
+            self.betapars[p,:] = [alpha, beta, xloc, xscale]
+        return self.betapars
+    
+    
     def evaluate(self):
         ''' Actually evaluate the objective function '''
-        self.results = np.zeros(self.npoints)
         for s,sample in enumerate(self.samples): # TODO: parallelize
             self.results[s] = self.func(sample, **self.func_args) # This is the time-consuming step!!
-        self.allresults[self.key] = sc.dcp(self.results)
+        self.allresults.append(sc.dcp(self.results))
         return self.results
     
     
