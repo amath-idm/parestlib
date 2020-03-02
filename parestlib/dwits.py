@@ -46,25 +46,25 @@ class DWITS(sc.prettyobj):
         # Set up results
         self.iteration = 0
         self.npars     = len(x) # Number of parameters being fit
-        self.nbetapars = 4 # Number of parameters in the beta distribution
-        self.betapars = np.zeros((self.npars, self.nbetapars)) # Each parameter is defined by a 4-metaparameter beta distribution
-        self.initialize_betas()
+        self.npriorpars = 4 # Number of parameters in the prior distribution
+        self.priorpars = np.zeros((self.npars, self.npriorpars)) # Each parameter is defined by a 4-metaparameter prior distribution
+        self.initialize_priors()
         self.samples  = np.zeros((self.npoints, self.npars)) # Array of parameter values
         self.results  = np.zeros(self.npoints) # For storing the results object (see optimize())
-        self.allbetapars = [] # For storing history of the beta-distribution parameters
+        self.allpriorpars = [] # For storing history of the prior-distribution parameters
         self.allsamples  = [] # For storing all points
         self.allresults  = [] # For storing all results
         
         return
     
     
-    def initialize_betas(self, prior='best', width=0.5):
-        ''' Create the initial beta distributions '''
+    def initialize_priors(self, prior='best', width=0.5):
+        ''' Create the initial prior distributions '''
         if isinstance(prior, type(np.array([]))):
-            prior_shape = (self.npars, self.nbetapars)
+            prior_shape = (self.npars, self.npriorpars)
             if prior.shape != prior_shape:
                 raise Exception(f'Shape of prior is wrong: {prior.shape} instead of {prior_shape}')
-            self.betapars = prior # Use supplied parameters directly
+            self.priorpars = prior # Use supplied parameters directly
             return
         for p in range(self.npars): # Loop over th eparameters
             xloc   = self.xmin[p]
@@ -84,8 +84,8 @@ class DWITS(sc.prettyobj):
                     alpha, beta = beta, alpha # If we swapped earlier, swap back now
             else:
                 raise NotImplementedError('Currently, only "uniform" and "best" priors are supported')
-            self.betapars[p,:] = [alpha, beta, xloc, xscale]
-        return self.betapars
+            self.priorpars[p,:] = [alpha, beta, xloc, xscale]
+        return self.priorpars
     
     
     def evaluate(self):
