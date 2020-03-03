@@ -44,6 +44,7 @@ class DWITS(sc.prettyobj):
         self.verbose     = verbose     if verbose    is not None else 2
         
         # Set up results
+        self.nsamples  = int(self.npoints/self.acceptance)
         self.iteration = 0
         self.npars     = len(x) # Number of parameters being fit
         self.npriorpars = 4 # Number of parameters in the prior distribution
@@ -63,7 +64,7 @@ class DWITS(sc.prettyobj):
         ''' Shortcut to the scipy.stats beta PDF function -- not used currently, but nice to have '''
         if len(pars) != 4:
             raise Exception(f'Beta distribution parameters must have length 4, not {len(pars)}')
-        pdf = st.beta.pdf(xvec, pars[0], pars[1], loc=pars[2], scale=pars[3])
+        pdf = st.beta.pdf(x=xvec, a=pars[0], b=pars[1], loc=pars[2], scale=pars[3])
         return pdf
     
     
@@ -72,7 +73,7 @@ class DWITS(sc.prettyobj):
         ''' Shortcut to the scipy.stats beta random variates function '''
         if len(pars) != 4:
             raise Exception(f'Beta distribution parameters must have length 4, not {len(pars)}')
-        rvs = st.beta.rvs(pars[0], pars[1], loc=pars[2], scale=pars[3], size=n)
+        rvs = st.beta.rvs(a=pars[0], b=pars[1], loc=pars[2], scale=pars[3], size=n)
         return rvs
     
     
@@ -106,12 +107,17 @@ class DWITS(sc.prettyobj):
         return self.priorpars
     
     
-    def draw_samples(self):
+    def draw_samples(self, init=False): # TODO: refactor
         ''' Choose samples from the (current) prior distribution '''
-        for p in range(self.npars): # Loop over the parameters
-            self.samples[:,p] = self.beta_rvs(pars=self.priorpars[p,:], n=self.npoints)
-        
-        return self.samples
+        if init: # Initial samples
+            for p in range(self.npars): # Loop over the parameters
+                self.samples[:,p] = self.beta_rvs(pars=self.priorpars[p,:], n=self.npoints)
+            return self.samples
+        else: 
+            new_samples = np.zeros((self.nsamples, self.npars))
+            for p in range(self.npars): # Loop over the parameters
+                new_samples[:,p] = self.beta_rvs(pars=self.priorpars[p,:], n=self.nsamples)
+            return new_samples
     
     
     def evaluate(self):
@@ -122,58 +128,28 @@ class DWITS(sc.prettyobj):
         return self.results
     
     
-    # def step(self):
-    #     ''' Calculate new samples based on the current samples and matching results '''
+    def step(self):
+        ''' Calculate new samples based on the current samples and matching results '''
     
-    #     # Calculate ordinary least squares fit of sample parameters on results
-    #     if self.optimum == 'max': results =  self.results # Default, just use the stored results
-    #     else:                     results = -self.results # Flip the sign if we're using the minimum
-    #     mod = sm.OLS(results, sm.add_constant(self.samples))
-    #     mod_fit = mod.fit() # Perform fit
+        # Calculate ordinary least squares fit of sample parameters on results
+        if self.optimum == 'max': results = -self.results # Flip the sign if we're using the maximum
+        else:                     results =  self.results # Default, just use the stored results
         
-    #     # Decide what type of step to take
-    #     fitinds = sc.findinds(self.fittable)
-    #     xranges = self.xmax - self.xmin
-    #     old_center = self.x[fitinds]
-    #     if mod_fit.rsquared > self.mp.rsquared_thresh: # The hyperplane is a good fit, calculate gradient descent
-    #         coef = mod_fit.params[1:]  # Drop constant
-    #         den = np.sqrt(sum([xranges[p]**2 * c**2 for c,p in zip(coef, fitinds)]))
-    #         scale = self.relstepsize*max(self.mp.mu_r, self.mp.sigma_r)
-    #         new_center = [xi + xranges[p]**2 * c*scale/den for xi, c, p in zip(old_center, coef, fitinds)]
-    #         if self.mp.useadaptation:
-    #             self.relstepsize *= self.mp.adaptation['step']
-    #             self.relstepsize = np.median([self.mp.adaptation['min'], self.relstepsize, self.mp.adaptation['max']]) # Set limits
-    #     else: # It's a bad fit, just pick the best point
-    #         max_idx = np.argmax(results)
-    #         new_center = self.samples[max_idx]
-    #         if self.mp.useadaptation:
-    #             self.relstepsize *= self.mp.adaptation['step']**(np.random.choice([-1,1]))
-    #             correction = 1.89 # Corrective factor so mean(log(abs(correction*randn()))) ≈ 0
-    #             dist = np.linalg.norm((new_center - old_center)/xranges) # Normalized distance to the best point
-    #             if self.mp.mu_r: # Shell-based sampling
-    #                 self.relstepsize = dist/self.mp.mu_r # Get the ratio of the new distance and the current distance
-    #             else:
-    #                 self.relstepsize = correction*dist/self.mp.sigma_r
-    #             self.relstepsize = np.median([self.mp.adaptation['min'], self.relstepsize, self.mp.adaptation['max']]) # Set limits
-            
+        new_samples = self.draw_samples()
+        distances = np.zeros((self.npoints, self.nsamples))
+        # Compute distances
         
-    #     # Update values
-    #     self.x[fitinds] = new_center # Reassign center
-    #     self.x = np.minimum(self.xmax, np.maximum(self.xmin, self.x)) # Clamp
-    #     self.allcenters[self.key] = sc.dcp(self.x)
-    #     self.sample_hypershell() # Calculate new hypershell and return
-    #     print(self.relstepsize)
-    #     return self.samples
+        
+        return self.samples
     
     
     def optimize(self):
         ''' Actually perform an optimization '''
         self.initialize_priors() # Initialize
-        self.sample()
+        self.draw_samples(init=True)
         self.evaluate() # Evaluate the objective function
         for i in range(self.maxiters): # Iterate
             if self.verbose>=1: print(f'Step {i+1} of {self.maxiters}')
-            
             self.step() # Calculate the next step
         
         # Create output structure
