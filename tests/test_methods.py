@@ -13,7 +13,7 @@ import numpy as np
 
 problems = [
     'norm',
-    #'rosenbrock',
+    'rosenbrock',
 ]
 
 startvals = {
