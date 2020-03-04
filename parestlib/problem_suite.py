@@ -22,19 +22,19 @@ def addnoise(err, noise=0.0):
     '''
     Add noise to the objective function. If noise is a scalar, then use it as a value
     and supply defaults. If noise is a dict, get kwargs from it.
-    
+
     Examples:
         # Add multiplicative Gaussian noise with std=0.1 to an objective value of 3.67
-        addnoise(3.67, noise=0.1)     
+        addnoise(3.67, noise=0.1)
 
         # Add additive uniform noise with range=0.1 to an objective value of 3.67
         addnoise(3.67, noise={'value':0.1, 
                               'gaussian':False,
                               'nonnegative':True,
                               'multiplicative':False,
-                              'verbose':True})  
+                              'verbose':True})
     '''
-    
+
     # Ensure it's a dict and set properties
     if not isinstance(noise, dict): noise = {'value':noise}
     value          = noise.get('value', 0.0)
@@ -42,25 +42,25 @@ def addnoise(err, noise=0.0):
     nonnegative    = noise.get('nonnegative', True)
     multiplicative = noise.get('multiplicative', True)
     verbose        = noise.get('verbose', True)
-    
+
     if value: # If no noise, just skip to the end
-        
+
         # Create the zero-mean noise
         if gaussian: noiseterm = value*pl.randn()
         else:        noiseterm = value*(pl.rand()-0.5)
-        
+
         # Update the error
         if multiplicative: output = err * (1 + noiseterm)
         else:              output = err + noiseterm
-        
+
         # If asked, swap the sign of the output -- WARNING, will mess up the statistical properties!
         if nonnegative and pl.sign(output) != pl.sign(err):
             if verbose: print('addnoise() warning: noise reversed sign of error; reversing back')
             output = -output
-    
+
     else:
         output = err
-        
+
     return output
 
 
@@ -74,16 +74,16 @@ def make_norm(noise=0.0, optimum=None, verbose=True):
     Simplest problem possible -- just the norm of the input vector.
     '''
     if optimum is None: optimum = 'min'
-    
+
     def norm(pars, noise=0.0, optimum='min'):
         err = pl.linalg.norm(pars)
         err = addnoise(err, noise)
         if optimum == 'max':
             err = -err
         return err
-    
+
     func = lambda pars: norm(pars, noise=noise, optimum=optimum) # Create the actual function
-    
+
     if verbose:
         print("Created test norm function with noise=%s" % (noise))
         print('Suggested starting point: [1, 1, ... 1]')
@@ -97,7 +97,7 @@ def make_rosenbrock(ndims=2, noise=0.0, optimum=None, verbose=True):
     Make a Rosenbrock's valley of 2 or 3 dimensions, optionally with noise.
     '''
     if optimum is None: optimum = 'min'
-    
+
     def rosenbrock(pars, ndims=2, noise=0.0, optimum='min'):
         x = pars[0]
         y = pars[1]
@@ -113,14 +113,14 @@ def make_rosenbrock(ndims=2, noise=0.0, optimum=None, verbose=True):
         return err
 
     func = lambda pars: rosenbrock(pars, ndims=ndims, noise=noise, optimum=optimum) # Create the actual function
-    
+
     if verbose:
         print("Created test Rosenbrock's valley function with ndims=%s, noise=%s" % (ndims, noise))
         print('Suggested starting point: %s' % ([-1]*ndims))
         print('Suggested limits: [-1,1]')
         print('Optimal solution: %s=0 at %s' % (optimum, [0.5]*ndims))
     return func
-    
+
 
 
 def make_hills(noise=0.0, optimum=None, verbose=True):
@@ -132,7 +132,7 @@ def make_hills(noise=0.0, optimum=None, verbose=True):
         doi:10.1109/IROS.2012.6385653
     '''
     if optimum is None: optimum = 'max'
-    
+
     def hills(pars, noise=0.0, optimum='max'):
         x1 = pars[0]
         x2 = pars[1]
@@ -141,9 +141,9 @@ def make_hills(noise=0.0, optimum=None, verbose=True):
         if optimum == 'min':
             err = -err
         return err
-    
+
     func = lambda pars: hills(pars, noise=noise, optimum=optimum) # Create the actual function
-    
+
     if verbose:
         print("Created test hills function with noise=%s" % (noise))
         print('Suggested starting point: [0.5,0.5]')
@@ -160,11 +160,11 @@ def plot_problem(which='rosenbrock', ndims=3, noise=None, npts=None, startvals=N
                  minvals=None, maxvals=None, randseed=None, perturb=None, alpha=None, 
                  uselog=True, force3d=False, trajectory=None, optimum=None, verbose=False):
     ''' Plot one of the test problems '''
-    
+
     if ndims !=2 and which not in ['norm', 'rosenbrock']:
         if verbose: print('Note: ndims=%s not supported for %s, resetting to 2' % (ndims, which))
         ndims = 2
-    
+
     if startvals is None: startvals = -1*pl.ones(ndims)
     if minvals   is None: minvals   = -1*pl.ones(ndims)
     if maxvals   is None: maxvals   =  1*pl.ones(ndims)
@@ -182,7 +182,7 @@ def plot_problem(which='rosenbrock', ndims=3, noise=None, npts=None, startvals=N
         if alpha    is None: alpha = 0.5
     else:
         raise NotImplementedError
-    
+
     # Make vectors
     if randseed:
         pl.seed(randseed)
@@ -190,13 +190,13 @@ def plot_problem(which='rosenbrock', ndims=3, noise=None, npts=None, startvals=N
     yvec = pl.linspace(minvals[1],maxvals[1],npts)
     if ndims == 2: zvec = [0]
     else:          zvec = pl.linspace(minvals[2],maxvals[2],npts)
-    
+
     # Define objective function
     if   which == 'rosenbrock': objective_func = make_rosenbrock(ndims=ndims, noise=noise, optimum=optimum)
     elif which == 'norm':       objective_func = make_norm(noise=noise, optimum=optimum)
     elif which == 'hills':      objective_func = make_hills(noise=noise, optimum=optimum)
     else:                       objective_func = which # Assume it's supplied directly
-    
+
     # Evaluate at each point
     alldata = []
     for x in xvec:
@@ -234,7 +234,7 @@ def plot_problem(which='rosenbrock', ndims=3, noise=None, npts=None, startvals=N
         ax.view_init(elev=50, azim=-45)
     pl.xlabel('x')
     pl.ylabel('y')
-    
+
     # Plot trajectory
     if trajectory:
         X2 = trajectory[:,0]
@@ -248,7 +248,7 @@ def plot_problem(which='rosenbrock', ndims=3, noise=None, npts=None, startvals=N
             O2 = pl.log10(trajectory[:,3])
             ax = sc.scatter3d(X2, Y2, Z2, O2, fig=fig, plotkwargs={'alpha':1.0, 'marker':'d'})
             ax = sc.plot3d(X2, Y2, Z2, fig=fig, plotkwargs={'c':(0,0,0), 'lw':3})
-    
+
     return fig
 
 

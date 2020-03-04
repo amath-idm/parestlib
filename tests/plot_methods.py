@@ -9,7 +9,7 @@ import sciris as sc
 import parestlib as pe
 
 # Choose the problem and method
-problem   = ['norm', 'rosenbrock', 'hills'][1]
+problem   = ['norm', 'rosenbrock', 'hills'][0]
 method    = ['shellstep', 'asd'][0]
 maxiters  = 50
 uselog    = 1

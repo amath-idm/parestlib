@@ -11,12 +11,12 @@ def asd(function, x, args=None, stepsize=0.1, sinc=2, sdec=2, pinc=2, pdec=2,
     label=None, optimum='min', verbose=2, **kwargs):
     """
     Optimization using adaptive stochastic descent (ASD).
-    
+
     output = asd(func,x0) starts at x0 and attempts to find a 
     local minimizer x of the function func. func accepts input x and returns a scalar 
     function value evaluated  at x. x0 can be a scalar, list, or Numpy array of 
     any size. 
-    
+
     asd() has the following options that can be set using keyword arguments. Their
     names and default values are as follows:
       stepsize       0.1     Initial step size as a fraction of each parameter
@@ -26,7 +26,7 @@ def asd(function, x, args=None, stepsize=0.1, sinc=2, sdec=2, pinc=2, pdec=2,
       pdec           2       Parameter selection learning rate (decrease)
       pinitial       None    Set initial parameter selection probabilities
       sinitial       None    Set initial step sizes; if empty, calculated from stepsize instead
-      xmin           None    Min value allowed for each parameter  
+      xmin           None    Min value allowed for each parameter
       xmax           None    Max value allowed for each parameter 
       maxiters       1000    Maximum number of iterations (1 iteration = 1 function evaluation)
       maxtime        3600    Maximum time allowed, in seconds
@@ -38,7 +38,7 @@ def asd(function, x, args=None, stepsize=0.1, sinc=2, sdec=2, pinc=2, pdec=2,
       optimum        'min'   Whether to minimize or maximize the function
       verbose        2       How much information to print during the run
       label          None    A label to use to annotate the output
-     
+
     asd() returns an objdict (which can be accessed by index, key, or attribute)
     with the following items:
         x          -- The parameter set that minimizes the objective function
@@ -48,7 +48,7 @@ def asd(function, x, args=None, stepsize=0.1, sinc=2, sdec=2, pinc=2, pdec=2,
                       function at each iteration; xvals, the parameter values at each iteration;
                       probabilities, the probability of each step; and stepsizes, the size of each
                       step for each parameter.
-  
+
     Example:
         import numpy as np
         import sciris as sc
@@ -59,7 +59,7 @@ def asd(function, x, args=None, stepsize=0.1, sinc=2, sdec=2, pinc=2, pdec=2,
         CC Kerr, S Dura-Bernal, TG Smolinski, GL Chadderdon, DP Wilson (2018). 
         Optimization by adaptive stochastic descent. 
         PloS ONE 13 (3), e0192944.
-    
+
     Version: 2019jul08
     """
     if randseed is not None:
@@ -148,7 +148,7 @@ def asd(function, x, args=None, stepsize=0.1, sinc=2, sdec=2, pinc=2, pdec=2,
         count += 1 # Increment the count
         if verbose == 1: print(offset + label + 'Iteration %i; elapsed %0.1f s; objective: %0.3e' % (count, time() - start, fval)) # For more verbose, use other print statement below
         if verbose >= 4: print('\n\n Count=%i \n x=%s \n probabilities=%s \n stepsizes=%s' % (count, x, probabilities, stepsizes))
-        
+
         # Calculate next parameters
         probabilities = probabilities / sum(probabilities) # Normalize probabilities
         cumprobs = np.cumsum(probabilities) # Calculate the cumulative distribution
@@ -238,9 +238,9 @@ def bsd(function, x, verbose=True):
     '''
     Bayesian stochastic descent...
     '''
-    
+
     print('NOT IMPLEMENTED')
-    
+
     # Placeholder output
     output = sc.objdict()
     output['x'] = [] # Parameters
