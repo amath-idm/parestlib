@@ -69,7 +69,7 @@ class ShellStep(sc.prettyobj):
 
     def __init__(self, func, x, xmin, xmax, fittable=None, mp=None, maxiters=None, optimum=None, func_args=None, verbose=None):
         self.func = func
-        self.x    = np.array(x)
+        self.x    = np.array(x, dtype=float)
         self.xmin = np.array(xmin)
         self.xmax = np.array(xmax)
         self.fittable  = np.array(fittable) if fittable is not None else np.ones(len(x)) # Set everything to be fittable by default
@@ -227,8 +227,7 @@ class ShellStep(sc.prettyobj):
 
 
         # Update values
-        #self.x[fitinds] = new_center # Reassign center - not working, must be making a copy?
-        self.x = new_center # Reassign center - works, but drops fitinds
+        self.x[fitinds] = new_center
         self.x = np.minimum(self.xmax, np.maximum(self.xmin, self.x)) # Clamp
 
         self.allcenters[self.key] = sc.dcp(self.x)
