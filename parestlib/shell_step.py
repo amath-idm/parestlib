@@ -70,8 +70,8 @@ class ShellStep(sc.prettyobj):
     def __init__(self, func, x, xmin, xmax, fittable=None, mp=None, maxiters=None, optimum=None, func_args=None, verbose=None):
         self.func = func
         self.x    = np.array(x, dtype=float)
-        self.xmin = np.array(xmin)
-        self.xmax = np.array(xmax)
+        self.xmin = np.array(xmin, dtype=float)
+        self.xmax = np.array(xmax, dtype=float)
         self.fittable  = np.array(fittable) if fittable is not None else np.ones(len(x)) # Set everything to be fittable by default
         self.maxiters  = maxiters  if maxiters  is not None else 10 # Set iterations to be 10 by default
         self.func_args = func_args if func_args is not None else {}
