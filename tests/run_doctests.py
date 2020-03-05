@@ -1,7 +1,7 @@
 '''
 Run the doctests on the imported modules. If you want to run on files instead,
 use this syntax:
-    
+
     import os
     import sciris as sc
     testdir = os.path.join(os.pardir, 'parestlib')
@@ -30,7 +30,7 @@ for name in submodules:
     sc.heading(f'Running tests on: {name}')
     result = doctest.testmod(submodule, verbose=True)
     results[name] = result
-    
+
 
 sc.heading('Summary:')
 attempted = 0
