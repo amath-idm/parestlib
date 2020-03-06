@@ -15,11 +15,11 @@ figsize = (18,12)
 x       = [0.2, 0.5, 0.8]
 xmin    = [0, 0, 0]
 xmax    = [1, 1, 1]
-dwits_pars = {}
-dwits_pars['npoints']     = 100
-dwits_pars['acceptance']  = 0.5
-dwits_pars['nbootstrap']  = 10
-dwits_pars['maxiters']    = 50 
+binnts_pars = {}
+binnts_pars['npoints']     = 100
+binnts_pars['acceptance']  = 0.5
+binnts_pars['nbootstrap']  = 10
+binnts_pars['maxiters']    = 50 
 
 
 
@@ -32,7 +32,7 @@ def objective(x):
 
 def test_creation():
     sc.heading('Create class')
-    D = pe.DWITS(func=objective, x=x, xmin=xmin, xmax=xmax)
+    D = pe.BINNTS(func=objective, x=x, xmin=xmin, xmax=xmax)
     assert D.iteration == 0 # Only one of various things that could be tested
     output = D.func(x)
     print(f'Default output is: {output}')
@@ -42,7 +42,7 @@ def test_creation():
 def test_initial_prior():
     sc.heading('Create prior distributions')
     width = 0.1
-    D = pe.DWITS(func=objective, x=x, xmin=xmin, xmax=xmax)
+    D = pe.BINNTS(func=objective, x=x, xmin=xmin, xmax=xmax)
     prior_dist_u = D.initialize_priors(prior='uniform')
     print(f'Uniform prior distribution is:\n{prior_dist_u}')
     prior_dist = D.initialize_priors(width=width)
@@ -70,7 +70,7 @@ def test_sampling():
     sc.heading('Create parameter samples')
     npoints = 1000
     nbins = 50
-    D = pe.DWITS(func=objective, x=x, xmin=xmin, xmax=xmax, npoints=npoints)
+    D = pe.BINNTS(func=objective, x=x, xmin=xmin, xmax=xmax, npoints=npoints)
     D.initialize_priors()
     samples = D.draw_samples()
     if doplot:
@@ -86,7 +86,7 @@ def test_sampling():
 
 def test_optimization():
     sc.heading('Run an actual optimization')
-    D = pe.DWITS(func=objective, x=x, xmin=xmin, xmax=xmax, **dwits_pars)
+    D = pe.BINNTS(func=objective, x=x, xmin=xmin, xmax=xmax, **binnts_pars)
     R = D.optimize()
     return R
 

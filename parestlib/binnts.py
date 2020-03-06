@@ -7,7 +7,7 @@ The naming convention is to distinguish the module (shell_step) from the functio
 Basic usage is:
     
     import parestlib as pe
-    output = pe.dwits(func, x, xmin, xmax)
+    output = pe.binnts(func, x, xmin, xmax)
 
 Version: 2020mar01
 '''
@@ -16,10 +16,10 @@ import numpy as np
 import sciris as sc
 import scipy.stats as st
 
-__all__ = ['DWITS', 'dwits']
+__all__ = ['BINNTS', 'binnts']
 
 
-class DWITS(sc.prettyobj):
+class BINNTS(sc.prettyobj):
     '''
     Class to implement density-weighted iterative threshold sampling.
     
@@ -150,7 +150,12 @@ class DWITS(sc.prettyobj):
         self.evaluate() # Evaluate the objective function
         for i in range(self.maxiters): # Iterate
             if self.verbose>=1: print(f'Step {i+1} of {self.maxiters}')
-            self.step() # Calculate the next step
+            self.make_surface() # Calculate the bootstrapped surface of nearest neighbors
+            self.draw_samples()
+            self.estimate_samples()
+            self.evaluate()
+            self.check_fit()
+            self.refit_priors()
         
         # Create output structure
         output = sc.objdict()
@@ -162,11 +167,11 @@ class DWITS(sc.prettyobj):
             
 
 
-def dwits(*args, **kwargs):
+def binnts(*args, **kwargs):
     '''
-    Wrapper for DWITS class
+    Wrapper for BINNTS class
     '''
-    dwest = DWITS(*args, **kwargs) # Create class instance
+    dwest = BINNTS(*args, **kwargs) # Create class instance
     output = dwest.optimize() # Run the optimization
     return output
     
