@@ -44,17 +44,16 @@ class BINNTS(sc.prettyobj):
         self.verbose     = verbose     if verbose    is not None else 2
         
         # Set up results
-        self.nsamples  = int(self.npoints/self.acceptance)
-        self.iteration = 0
-        self.npars     = len(x) # Number of parameters being fit
-        self.npriorpars = 4 # Number of parameters in the prior distribution
-        self.priorpars = np.zeros((self.npars, self.npriorpars)) # Each parameter is defined by a 4-metaparameter prior distribution
-        self.initialize_priors()
-        self.samples  = np.zeros((self.npoints, self.npars)) # Array of parameter values
-        self.results  = np.zeros(self.npoints) # For storing the results object (see optimize())
+        self.ncandidates  = int(self.npoints/self.acceptance)
+        self.iteration    = 0
+        self.npars        = len(x) # Number of parameters being fit
+        self.npriorpars   = 4 # Number of parameters in the prior distribution
+        self.priorpars    = np.zeros((self.npars, self.npriorpars)) # Each parameter is defined by a 4-metaparameter prior distribution
+        self.samples      = np.zeros((self.npoints, self.npars)) # Array of parameter values
+        self.results      = np.zeros(self.npoints) # For storing the results object (see optimize())
         self.allpriorpars = [] # For storing history of the prior-distribution parameters
-        self.allsamples  = [] # For storing all points
-        self.allresults  = [] # For storing all results
+        self.allsamples   = [] # For storing all points
+        self.allresults   = [] # For storing all results
         
         return
     
@@ -107,17 +106,17 @@ class BINNTS(sc.prettyobj):
         return
     
     
-    def draw_samples(self, init=False): # TODO: refactor discrepancy between points and samples
+    def draw_samples(self, init=False): # TODO: refactor discrepancy between points and samples and candidates
         ''' Choose samples from the (current) prior distribution '''
         if init: # Initial samples
             for p in range(self.npars): # Loop over the parameters
                 self.samples[:,p] = self.beta_rvs(pars=self.priorpars[p,:], n=self.npoints)
             return
         else: 
-            new_samples = np.zeros((self.nsamples, self.npars))
+            candidates = np.zeros((self.ncandidates, self.npars))
             for p in range(self.npars): # Loop over the parameters
-                new_samples[:,p] = self.beta_rvs(pars=self.priorpars[p,:], n=self.nsamples)
-            return new_samples
+                candidates[:,p] = self.beta_rvs(pars=self.priorpars[p,:], n=self.ncandidates)
+            return candidates
     
     
     def evaluate(self):

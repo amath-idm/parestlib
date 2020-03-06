@@ -32,34 +32,35 @@ def objective(x):
 
 def test_creation():
     sc.heading('Create class')
-    D = pe.BINNTS(func=objective, x=x, xmin=xmin, xmax=xmax)
-    assert D.iteration == 0 # Only one of various things that could be tested
-    output = D.func(x)
+    B = pe.BINNTS(func=objective, x=x, xmin=xmin, xmax=xmax)
+    assert B.iteration == 0 # Only one of various things that could be tested
+    output = B.func(x)
     print(f'Default output is: {output}')
-    return D
+    return B
     
 
 def test_initial_prior(doplot=False):
     sc.heading('Create prior distributions')
     width = 0.1
-    D = pe.BINNTS(func=objective, x=x, xmin=xmin, xmax=xmax)
-    prior_dist_u = D.initialize_priors(prior='uniform')
+    B = pe.BINNTS(func=objective, x=x, xmin=xmin, xmax=xmax)
+    prior_dist_u = B.initialize_priors(prior='uniform')
     print(f'Uniform prior distribution is:\n{prior_dist_u}')
-    prior_dist = D.initialize_priors(width=width)
-    print(f'"Best" prior distribution for x={D.x} is:\n{prior_dist}')
+    B.initialize_priors(width=width)
+    prior_dist = B.priorpars
+    print(f'"Best" prior distribution for x={B.x} is:\n{prior_dist}')
     
     # Check that not found distributions crash
     with pytest.raises(NotImplementedError):
-        D.initialize_priors(prior='something_mistyped')
+        B.initialize_priors(prior='something_mistyped')
     
     # Optionally plot
     if doplot:
         pl.figure(figsize=figsize)
-        for i in range(D.npars):
+        for i in range(B.npars):
             bp = prior_dist[i]
-            xvec = pl.linspace(D.xmin[i], D.xmax[i])
-            priordist = D.beta_pdf(bp, xvec)
-            pl.plot(xvec, priordist, label=f'x={D.x[i]}, alpha={bp[0]:0.2f}, beta={bp[1]:0.2f}')
+            xvec = pl.linspace(B.xmin[i], B.xmax[i])
+            priordist = B.beta_pdf(bp, xvec)
+            pl.plot(xvec, priordist, label=f'x={B.x[i]}, alpha={bp[0]:0.2f}, beta={bp[1]:0.2f}')
             pl.legend()
         pl.show()
         
@@ -70,54 +71,65 @@ def test_sampling(doplot=False):
     sc.heading('Create parameter samples')
     npoints = 1000
     nbins = 50
-    D = pe.BINNTS(func=objective, x=x, xmin=xmin, xmax=xmax, npoints=npoints)
-    D.initialize_priors()
-    samples = D.draw_samples()
+    B = pe.BINNTS(func=objective, x=x, xmin=xmin, xmax=xmax, npoints=npoints)
+    B.initialize_priors()
+    samples = B.draw_samples()
     if doplot:
         pl.figure(figsize=figsize)
-        for p in range(D.npars):
-            pl.subplot(D.npars, 1, p+1)
+        for p in range(B.npars):
+            pl.subplot(B.npars, 1, p+1)
             pl.hist(samples[:,p], bins=nbins)
-            pl.title(f'Samples for x={D.x[p]}, β={D.priorpars[p,:]}')
+            pl.title(f'Samples for x={B.x[p]}, β={B.priorpars[p,:]}')
         pl.show()
     return samples
     
 
 def test_bootstrap(doplot=False):
-    sc.heading('Run an actual optimization')
-    D = pe.BINNTS(func=objective, x=x, xmin=xmin, xmax=xmax, **binnts_pars)
-    D.initialize_priors()
-    D.draw_samples(init=True)
-    D.evaluate()
-    D.make_surfaces()
+    sc.heading('Bootstrapped parameter values')
+    B = pe.BINNTS(func=objective, x=x, xmin=xmin, xmax=xmax, **binnts_pars)
+    B.initialize_priors()
+    B.draw_samples(init=True)
+    B.evaluate()
+    B.make_surfaces()
     if doplot:
         sf = 300 # Scale factor from value to point size for plotting
+        x_ind = 0 # Which parameter corresponds to the x axis -- just for plotting
+        y_ind = 1 # Ditto for y
+        val_ind = B.npars # The value for sims is stored after the parameters
         pl.figure(figsize=figsize)
-        for b in range(D.nbootstrap):
-            this_bs = D.bs_surfaces[b]
-            p1 = this_bs[:,0]
-            p2 = this_bs[:,1]
-            val = this_bs[:,2]
+        for b in range(B.nbootstrap):
+            pl.clf()
+            this_bs = B.bs_surfaces[b]
+            p1 = this_bs[:,x_ind]
+            p2 = this_bs[:,y_ind]
+            val = this_bs[:,val_ind]
             pl.scatter(p1, p2, s=val*sf)
-            pl.title(f'Bootstrap {b+1} of {D.nbootstrap}, size ∝ error')
+            pl.title(f'Bootstrap {b+1} of {B.nbootstrap}, size ∝ error')
+            pl.xlim([B.xmin[x_ind], B.xmax[x_ind]])
+            pl.ylim([B.xmin[y_ind], B.xmax[y_ind]])
             pl.pause(0.2)
-    return D.bs_surfaces
+    return B.bs_surfaces
 
+
+def test_estimation(doplot=False):
+    sc.heading('Bootstrapped parameter values')
+    
+    
 
 
 # def test_optimization():
 #     sc.heading('Run an actual optimization')
-#     D = pe.BINNTS(func=objective, x=x, xmin=xmin, xmax=xmax, **binnts_pars)
-#     R = D.optimize()
+#     B = pe.BINNTS(func=objective, x=x, xmin=xmin, xmax=xmax, **binnts_pars)
+#     R = B.optimize()
 #     return R
 
 
 #%% Run as a script -- comment out lines to turn off tests
 if __name__ == '__main__':
     sc.tic()
-    # D = test_creation()
-    # prior_dist = test_initial_prior(doplot=doplot)
-    # samples = test_sampling(doplot=doplot)
+    B = test_creation()
+    prior_dist = test_initial_prior(doplot=doplot)
+    samples = test_sampling(doplot=doplot)
     bs_surfaces = test_bootstrap(doplot=doplot)
     # R = test_optimization(doplot=doplot)
     print('\n'*2)
