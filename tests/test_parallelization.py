@@ -37,7 +37,7 @@ startvals = [1, 2, 3]
 
 lambda_func = pe.make_norm(noise=0.05, verbose=0, delay=0.05) # pe.make_rosenbrock(ndims=len(startvals), noise=0.05, verbose=0)
 
-def objective_func(*args, **kwargs):
+def wrapped_lambda_func(*args, **kwargs):
     ''' We have to wrap the lambda function since can't be passed to multiprocessing directly '''
     return lambda_func(*args, **kwargs)
 
@@ -48,12 +48,12 @@ def test_parallelization(doplot=False):
     
     print('Running in serial')
     t1i = sc.tic()
-    serial_result = pe.shellstep(objective_func, startvals, parallelize=False, **kwargs)
+    serial_result = pe.shellstep(lambda_func, startvals, parallelize=False, **kwargs)
     t1f = sc.toc(t1i, output=True)
     
     print('Running in parallel')
     t2i = sc.tic()
-    parallel_result = pe.shellstep(objective_func, startvals, parallelize=True, **kwargs)
+    parallel_result = pe.shellstep(wrapped_lambda_func, startvals, parallelize=True, **kwargs)
     t2f = sc.toc(t2i, output=True)
     
     print(f'Serial time: {t1f:0.3f} s; parallel time: {t2f:0.3f} s')
@@ -63,7 +63,7 @@ def test_parallelization(doplot=False):
 #%% Run as a script -- comment out lines to turn off tests
 if __name__ == '__main__':
     sc.tic()
-    result = test_parallelization()
+    r_s, r_p = test_parallelization()
     print('\n'*2)
     sc.toc()
     print('Done.')
