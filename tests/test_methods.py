@@ -24,7 +24,7 @@ methods = {
         'ASD':       pe.asd,
         #'BSD':       pe.bsd,
         'ShellStep': pe.shellstep,
-        'DWITS':     pe.dwits,
+        'BINNTS':    pe.binnts,
         }
 
 kwargs = {
@@ -47,7 +47,7 @@ kwargs = {
             }
         },
     },
-    'DWITS': {},
+    'BINNTS': {},
 }
 
 repeats = 3
