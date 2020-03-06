@@ -12,14 +12,14 @@ import parestlib as pe
 #%% Define the parameters
 doplot  = True
 figsize = (18,12)
-x       = [0.2, 0.5, 0.8]
-xmin    = [0, 0, 0]
-xmax    = [1, 1, 1]
+x       = [0.2, 0.5]
+xmin    = [0, 0]
+xmax    = [1, 1]
 binnts_pars = {}
-binnts_pars['npoints']     = 100
+binnts_pars['npoints']     = 50
 binnts_pars['acceptance']  = 0.5
 binnts_pars['nbootstrap']  = 10
-binnts_pars['maxiters']    = 50 
+binnts_pars['maxiters']    = 5 
 
 
 
@@ -27,7 +27,7 @@ binnts_pars['maxiters']    = 50
 
 def objective(x):
     ''' Example objective function '''
-    return pl.norm(x)
+    return pl.norm(x) # TODO: add optional noise
 
 
 def test_creation():
@@ -39,7 +39,7 @@ def test_creation():
     return D
     
 
-def test_initial_prior():
+def test_initial_prior(doplot=False):
     sc.heading('Create prior distributions')
     width = 0.1
     D = pe.BINNTS(func=objective, x=x, xmin=xmin, xmax=xmax)
@@ -66,7 +66,7 @@ def test_initial_prior():
     return prior_dist
 
 
-def test_sampling():
+def test_sampling(doplot=False):
     sc.heading('Create parameter samples')
     npoints = 1000
     nbins = 50
@@ -82,22 +82,44 @@ def test_sampling():
         pl.show()
     return samples
     
-    
 
-def test_optimization():
+def test_bootstrap(doplot=False):
     sc.heading('Run an actual optimization')
     D = pe.BINNTS(func=objective, x=x, xmin=xmin, xmax=xmax, **binnts_pars)
-    R = D.optimize()
-    return R
+    D.initialize_priors()
+    D.draw_samples(init=True)
+    D.evaluate()
+    D.make_surfaces()
+    if doplot:
+        sf = 300 # Scale factor from value to point size for plotting
+        pl.figure(figsize=figsize)
+        for b in range(D.nbootstrap):
+            this_bs = D.bs_surfaces[b]
+            p1 = this_bs[:,0]
+            p2 = this_bs[:,1]
+            val = this_bs[:,2]
+            pl.scatter(p1, p2, s=val*sf)
+            pl.title(f'Bootstrap {b+1} of {D.nbootstrap}, size ∝ error')
+            pl.pause(0.2)
+    return D.bs_surfaces
+
+
+
+# def test_optimization():
+#     sc.heading('Run an actual optimization')
+#     D = pe.BINNTS(func=objective, x=x, xmin=xmin, xmax=xmax, **binnts_pars)
+#     R = D.optimize()
+#     return R
 
 
 #%% Run as a script -- comment out lines to turn off tests
 if __name__ == '__main__':
     sc.tic()
     # D = test_creation()
-    # B = test_initial_prior()
-    # S = test_sampling()
-    R = test_optimization()
+    # prior_dist = test_initial_prior(doplot=doplot)
+    # samples = test_sampling(doplot=doplot)
+    bs_surfaces = test_bootstrap(doplot=doplot)
+    # R = test_optimization(doplot=doplot)
     print('\n'*2)
     sc.toc()
     print('Done.')

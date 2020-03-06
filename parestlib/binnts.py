@@ -104,15 +104,15 @@ class BINNTS(sc.prettyobj):
             else:
                 raise NotImplementedError('Currently, only "uniform" and "best" priors are supported')
             self.priorpars[p,:] = [alpha, beta, xloc, xscale]
-        return self.priorpars
+        return
     
     
-    def draw_samples(self, init=False): # TODO: refactor
+    def draw_samples(self, init=False): # TODO: refactor discrepancy between points and samples
         ''' Choose samples from the (current) prior distribution '''
         if init: # Initial samples
             for p in range(self.npars): # Loop over the parameters
                 self.samples[:,p] = self.beta_rvs(pars=self.priorpars[p,:], n=self.npoints)
-            return self.samples
+            return
         else: 
             new_samples = np.zeros((self.nsamples, self.npars))
             for p in range(self.npars): # Loop over the parameters
@@ -125,22 +125,34 @@ class BINNTS(sc.prettyobj):
         for s,sample in enumerate(self.samples): # TODO: parallelize
             self.results[s] = self.func(sample, **self.func_args) # This is the time-consuming step!!
         self.allresults.append(sc.dcp(self.results))
-        return self.results
+        return
     
     
-    def step(self):
-        ''' Calculate new samples based on the current samples and matching results '''
+    # def step(self):
+    #     ''' Calculate new samples based on the current samples and matching results '''
     
-        # Calculate ordinary least squares fit of sample parameters on results
-        if self.optimum == 'max': results = -self.results # Flip the sign if we're using the maximum
-        else:                     results =  self.results # Default, just use the stored results
+    #     # Calculate ordinary least squares fit of sample parameters on results
+    #     if self.optimum == 'max': results = -self.results # Flip the sign if we're using the maximum
+    #     else:                     results =  self.results # Default, just use the stored results
         
-        new_samples = self.draw_samples()
-        distances = np.zeros((self.npoints, self.nsamples))
-        # Compute distances
+    #     new_samples = self.draw_samples()
+    #     distances = np.zeros((self.npoints, self.nsamples))
+    #     # Compute distances
         
         
-        return self.samples
+    #     return self.samples
+    
+    
+    def make_surfaces(self):
+        ''' Create the bootstrapped surfaces '''
+        self.bs_surfaces = np.zeros((self.nbootstrap, len(self.samples), self.npars+1))
+        for b in range(self.nbootstrap):
+            bs_samples = np.random.randint(0, len(self.samples), len(self.samples)) # TODO should be able to use npoints or nsamples?!
+            for p in range(self.npars):
+                self.bs_surfaces[b,:,p] = self.samples[bs_samples, p]
+            self.bs_surfaces[b,:,-1] = self.results[bs_samples]
+        
+        return
     
     
     def optimize(self):
@@ -150,7 +162,7 @@ class BINNTS(sc.prettyobj):
         self.evaluate() # Evaluate the objective function
         for i in range(self.maxiters): # Iterate
             if self.verbose>=1: print(f'Step {i+1} of {self.maxiters}')
-            self.make_surface() # Calculate the bootstrapped surface of nearest neighbors
+            self.make_surfaces() # Calculate the bootstrapped surface of nearest neighbors
             self.draw_samples()
             self.estimate_samples()
             self.evaluate()
