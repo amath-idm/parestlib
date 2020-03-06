@@ -69,20 +69,22 @@ def addnoise(err, noise=0.0):
 ### Define test problems
 ##########################################
 
-def make_norm(noise=0.0, optimum=None, verbose=True):
+def make_norm(noise=0.0, optimum=None, verbose=True, delay=None):
     '''
     Simplest problem possible -- just the norm of the input vector.
     '''
     if optimum is None: optimum = 'min'
 
-    def norm(pars, noise=0.0, optimum='min'):
+    def norm(pars, noise=0.0, optimum='min', delay=None):
+        if delay:
+            pl.pause(delay*(0.5+0.5*pl.rand())) # Add a noticeable delay
         err = pl.linalg.norm(pars)
         err = addnoise(err, noise)
         if optimum == 'max':
             err = -err
         return err
 
-    func = lambda pars: norm(pars, noise=noise, optimum=optimum) # Create the actual function
+    func = lambda pars: norm(pars, noise=noise, optimum=optimum, delay=delay) # Create the actual function
 
     if verbose:
         print("Created test norm function with noise=%s" % (noise))

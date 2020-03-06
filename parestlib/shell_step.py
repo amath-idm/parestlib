@@ -9,7 +9,7 @@ Basic usage is:
     import parestlib as om
     output = om.shellstep(func, x, xmin, xmax)
 
-Version: 2019aug18
+Version: 2020mar06
 '''
 
 import numpy as np
@@ -64,19 +64,21 @@ class ShellStep(sc.prettyobj):
     a hyperplane to it, and if it "succeeds" (the r-squared value is high enough),
     it will step in the uphill direction. Otherwise, it just takes the best point.
 
-    Version: 2019aug18
+    Version: 2020mar06
     '''
 
-    def __init__(self, func, x, xmin, xmax, fittable=None, mp=None, maxiters=None, optimum=None, func_args=None, verbose=None):
+    def __init__(self, func, x, xmin, xmax, fittable=None, mp=None, maxiters=None, optimum=None, func_args=None, parallel_args=None, parallelize=None, verbose=None):
         self.func = func
-        self.x    = np.array(x, dtype=float)
+        self.x    = np.array(x,    dtype=float)
         self.xmin = np.array(xmin, dtype=float)
-        self.xmax = np.array(xmax, dtype=float)
-        self.fittable  = np.array(fittable) if fittable is not None else np.ones(len(x)) # Set everything to be fittable by default
-        self.maxiters  = maxiters  if maxiters  is not None else 10 # Set iterations to be 10 by default
-        self.func_args = func_args if func_args is not None else {}
-        self.verbose   = verbose   if verbose   is not None else 2
-        self.optimum   = optimum   if optimum   is not None else 'max'
+        self.xmax = np.array(xmax, dtype=float) # TODO: refactor how defaults are handled
+        self.fittable      = np.array(fittable) if fittable is not None else np.ones(len(x)) # Set everything to be fittable by default
+        self.maxiters      = maxiters      if maxiters      is not None else 10 # Set iterations to be 10 by default
+        self.func_args     = func_args     if func_args     is not None else {}
+        self.parallel_args = parallel_args if parallel_args is not None else {}
+        self.parallelize   = parallelize   if parallelize   is not None else True
+        self.verbose       = verbose       if verbose       is not None else 2
+        self.optimum       = optimum       if optimum       is not None else 'max'
         self.set_mp(mp) # mp = metaparameters; can be None, 'sphere', 'shell', or a dict of values
         self.samples = None
         self.results = None
@@ -181,8 +183,12 @@ class ShellStep(sc.prettyobj):
     def evaluate(self):
         ''' Actually evaluate the objective function '''
         self.results = np.zeros(self.mp.N)
-        for s,sample in enumerate(self.samples): # TODO: parallelize
-            self.results[s] = self.func(sample, **self.func_args) # This is the time-consuming step!!
+        if not self.parallelize:
+            for s,sample in enumerate(self.samples):
+                self.results[s] = self.func(sample, **self.func_args) # This is the time-consuming step!!
+        else:
+            resultslist = sc.parallelize(self.func, iterarg=self.samples, kwargs=self.func_args, **self.parallel_args)
+            self.results = np.array(resultslist, dtype=float)
         self.allresults[self.key] = sc.dcp(self.results)
         self.fvals[self.iteration,:] = self.results
         return self.results
