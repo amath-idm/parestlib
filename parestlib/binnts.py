@@ -19,34 +19,61 @@ import scipy.stats as st
 __all__ = ['calculate_distances', 'BINNTS', 'binnts']
 
 
-def calculate_distances(point, arr, quantiles=None):
+def calculate_distances(test, training, quantiles=None):
     '''
-    Calculation of distances -- was going to use Numba but plenty fast without.
+    Calculation of distances between a test set of points and a training set of
+    points -- was going to use Numba but plenty fast without.
+    
     Before calculating distances, normalize each dimension to have the same "scale"
     (default: interquartile range).
+    
+    "test" can be a single point or an array of points.
     '''
     
     # Handle inputs
     if quantiles is None:
         quantiles = [0.25, 0.75] # Default quantiles to compute scale from
-    npars = len(point)
-    npoints = len(arr)
-    if arr.shape != (npoints, npars):
-        raise ValueError(f'Array shape appears to be incorrect: {arr.shape} vs {(npoints, npars)}')
     
     # Copy; otherwise, these get modified in place
-    point = sc.dcp(point)
-    arr = sc.dcp(arr)
+    test = sc.dcp(test)
+    training = sc.dcp(training)
+    
+    # Dimension checking
+    if test.ndim == 1:
+        test = np.array([test]) # Ensure it's 2-dimensional
+    
+    ntest, npars = test.shape
+    ntraining, npars2 = training.shape
+    if npars != npars2:
+        raise ValueError(f'Array shape appears to be incorrect: {npars2} should be {npars}')
     
     # Normalize
     for p in range(npars):
-        scale = np.diff(np.quantile(arr[:,p], quantiles))
-        arr[:,p] /= scale # Transform to be of comparable scale
-        point[p] /= scale # For point too
+        scale = np.diff(np.quantile(training[:,p], quantiles))
+        training[:,p] /= scale # Transform to be of comparable scale
+        test[:,p] /= scale # For test points too
         
     # The actual calculation
-    distances = np.linalg.norm(arr - point, axis=1)
+    distances = np.zeros((ntest, ntraining))
+    for i in range(ntest):
+        distances[i,:] = np.linalg.norm(training - test[i,:], axis=1)
+    
+    if len(distances) == 1:
+        distances = distances.flatten() # If we have only a single point, return a vector of distances
+    
     return distances
+
+
+def knn_estimate(test, training, values, k=3, quantiles=None):
+    ''' Perform nearest-neighbor estimation '''
+    
+    # Handle inputs
+    if quantiles is None:
+        quantiles = [0.25, 0.75] # Default quantiles to compute scale from
+    
+    
+    
+    return estimates, lower, upper
 
 
 class BINNTS(sc.prettyobj):
@@ -65,16 +92,18 @@ class BINNTS(sc.prettyobj):
         self.xmax = np.array(xmax)
         
         # Handle optional arguments
-        self.neighbors   = neighbors   if neighbors  is not None else 3
-        self.npoints     = npoints     if npoints    is not None else 100
-        self.acceptance  = acceptance  if acceptance is not None else 0.5
-        self.nbootstrap  = nbootstrap  if nbootstrap is not None else 10
-        # self.nfolds      = nfolds      if nfolds     is not None else 5
-        # self.leaveout    = leaveout    if leaveout   is not None else 0.2
-        self.maxiters    = maxiters    if maxiters   is not None else 50
-        self.optimum     = optimum     if optimum    is not None else 'min'
-        self.func_args   = func_args   if func_args  is not None else {}
-        self.verbose     = verbose     if verbose    is not None else 2
+        self.neighbors     = neighbors     if neighbors     is not None else 3
+        self.npoints       = npoints       if npoints       is not None else 100
+        self.acceptance    = acceptance    if acceptance    is not None else 0.5
+        self.nbootstrap    = nbootstrap    if nbootstrap    is not None else  10
+        # self.nfolds        = nfolds        if nfolds        is not None else 5
+        # self.leaveout      = leaveout      if leaveout      is not None else 0.2
+        self.maxiters      = maxiters      if maxiters      is not None else 50
+        self.optimum       = optimum       if optimum       is not None else 'min'
+        self.func_args     = func_args     if func_args     is not None else {}
+        self.verbose       = verbose       if verbose       is not None else 2
+        self.parallel_args = parallel_args if parallel_args is not None else {}
+        self.parallelize   = parallelize   if parallelize   is not None else False
         
         # Set up results
         self.ncandidates  = int(self.npoints/self.acceptance)
@@ -152,9 +181,13 @@ class BINNTS(sc.prettyobj):
     
     
     def evaluate(self):
-        ''' Actually evaluate the objective function '''
-        for s,sample in enumerate(self.samples): # TODO: parallelize
-            self.results[s] = self.func(sample, **self.func_args) # This is the time-consuming step!!
+        ''' Actually evaluate the objective function -- copied from shell_step.py '''
+        if not self.parallelize:
+            for s,sample in enumerate(self.samples):
+                self.results[s] = self.func(sample, **self.func_args) # This is the time-consuming step!!
+        else:
+            resultslist = sc.parallelize(self.func, iterarg=self.samples, kwargs=self.func_args, **self.parallel_args)
+            self.results = np.array(resultslist, dtype=float)
         self.allsamples = np.concatenate([self.allsamples, self.samples])
         self.allresults = np.concatenate([self.allresults, self.results])
         return
@@ -189,13 +222,12 @@ class BINNTS(sc.prettyobj):
         distances = np.zeros((self.nbootstrap, self.ncandidates, len(self.allsamples))) # Matrix of all distances
         for b in range(self.nbootstrap):
             bs_pars = self.bs_pars[b,:,:] # e.g. 100 points with 5 parameter values
-            for c in range(self.ncandidates):
+            for c in range(self.ncandidates): # TODO: move this loop inside calculate_distances
                 candidate = self.candidates[c,:]
-                distances[b,c,:] = calculate_distances(candidate, bs_pars)
+                distances[b,c,:] = calculate_distances(point=candidate, arr=bs_pars)
         
         # Calculate estimates
-        estimates = #
-        variances = #
+        estimates, variances = nn_estimation(points=self.candidates, distances=distances, values=self.bs_vals)
         
         # Choose best points
         ...

@@ -113,8 +113,42 @@ def test_bootstrap(doplot=False):
 def test_distances(doplot=False):
     npoints = 1000
     npars = 2
-    point = pl.rand(npars)
-    arr = pl.rand(npoints, npars)
+    test = pl.rand(npars)
+    training = pl.rand(npoints, npars)
+    t1 = sc.tic()
+    distances = pe.calculate_distances(test=test, training=training)
+    t2 = sc.toc(t1, output=True)
+    timestr = f'time = {t2*1e3:0.2f} ms'
+    print(timestr)
+    
+    # Test a shape mismatch
+    with pytest.raises(ValueError):
+        pe.calculate_distances(test=pl.rand(7), training=pl.rand(7,4)) # Should be 4, not 7
+        
+    if doplot:
+        x_ind = 0
+        y_ind = 1
+        pl.figure(figsize=figsize)
+        pl.scatter(training[:,x_ind], training[:,y_ind], c=distances, label='Samples')
+        pl.scatter(test[0], test[1], s=200, c=[[0]*3], label='Origin')
+        pl.xlabel('Parameter 1')
+        pl.ylabel('Parameter 2')
+        pl.title(f'Distance calculations (color ∝ distance); {timestr}')
+        pl.legend()
+    return distances
+
+
+def test_nn_estimates(doplot=False):
+    ntraining = 500
+    ntest = 50
+    nboot = 10
+    npars = 2
+    training_arr = pl.rand(ntraining, npars)
+    training_vals = training_arr.sum(axis=1)
+    test_arr = pl.rand(ntest, npars)
+    training_vals = pe.knn_estimate(test=test_arr, training=training_arr, k=3)
+    
+    
     t1 = sc.tic()
     distances = pe.calculate_distances(point, arr)
     t2 = sc.toc(t1, output=True)
@@ -164,8 +198,8 @@ if __name__ == '__main__':
     # prior_dist = test_initial_prior(doplot=doplot)
     # samples = test_sampling(doplot=doplot)
     # bs_pars, bs_vals = test_bootstrap(doplot=doplot)
-    # distances = test_distances(doplot=doplot)
-    estimates = test_estimation(doplot=doplot)
+    distances = test_distances(doplot=doplot)
+    # estimates = test_nn_estimates(doplot=doplot)
     # R = test_optimization(doplot=doplot)
     print('\n'*2)
     sc.toc()
