@@ -115,16 +115,16 @@ def test_distances(doplot=False):
     nsamples = 2
     npars = 2
     test = pl.rand(nsamples, npars)
-    training = pl.rand(npoints, npars)
+    train = pl.rand(npoints, npars)
     t1 = sc.tic()
-    distances = pe.scaled_norm(test=test, training=training)
+    distances = pe.scaled_norm(test=test, train=train)
     t2 = sc.toc(t1, output=True)
     timestr = f'time = {t2*1e3:0.2f} ms'
     print(timestr)
     
     # Test a shape mismatch
     with pytest.raises(ValueError):
-        pe.scaled_norm(test=pl.rand(7), training=pl.rand(7,4)) # Should be 4, not 7
+        pe.scaled_norm(test=pl.rand(7), train=pl.rand(7,4)) # Should be 4, not 7
         
     if doplot:
         x_ind = 0
@@ -136,7 +136,7 @@ def test_distances(doplot=False):
             markers = ['<','>']
             markersize = 50
             bigmarker = 200
-            pl.scatter(training[:,x_ind]+offset*pt, training[:,y_ind], s=markersize, c=distances[pt], marker=markers[pt], label=f'Samples {pt+1}')
+            pl.scatter(train[:,x_ind]+offset*pt, train[:,y_ind], s=markersize, c=distances[pt], marker=markers[pt], label=f'Samples {pt+1}')
             pl.scatter(test[pt][0], test[pt][1], s=bigmarker, c='k', marker=markers[pt], label=f'Origin {pt+1}')
         pl.xlabel('Parameter 1')
         pl.ylabel('Parameter 2')
@@ -147,63 +147,32 @@ def test_distances(doplot=False):
     return distances
 
 
-def test_estimates(doplot=False, plot_training=False):
-    ntraining = 100
+def test_estimates(doplot=False):
+    
+    # Set parameters
+    ntrain = 100
     ntest = 50
     nbootstrap = 10
     k = 3
     npars = 2
     noise = 0.2
-    training_arr = pl.rand(ntraining, npars)
-    training_vals = pl.sqrt(((training_arr-0.5)**2).sum(axis=1)) + noise*pl.rand(ntraining) # Distance from center
     
-    
+    # Set up training and test arrays
+    train_arr = pl.rand(ntrain, npars)
+    train_vals = pl.sqrt(((train_arr-0.5)**2).sum(axis=1)) + noise*pl.rand(ntrain) # Distance from center
     test_arr = pl.rand(ntest, npars)
-    test_vals = pe.knn(test=test_arr, training=training_arr, values=training_vals, k=k, nbootstrap=nbootstrap)
+    test_vals = pe.knn(test=test_arr, train=train_arr, values=train_vals, k=k, nbootstrap=nbootstrap) # Where the magic happens
     
     if doplot:
         xind = 0
         yind = 1
-        training = dict(marker='o', s=50)
-        test     = dict(marker='*', s=100)
+        train_args = dict(marker='o', s=50)
+        test_args     = dict(marker='*', s=100)
         pl.figure(figsize=figsize)
-        pl.scatter(training_arr[:,xind], training_arr[:,yind], c=training_vals, **training)
-        pl.scatter(test_arr[:,xind],     test_arr[:,yind],     c=test_vals,     **test)
+        pl.scatter(train_arr[:,xind], train_arr[:,yind], c=train_vals, **train_args)
+        pl.scatter(test_arr[:,xind],  test_arr[:,yind],  c=test_vals,  **test_args)
     
-    
-    # t1 = sc.tic()
-    # distances = pe.calculate_distances(point, arr)
-    # t2 = sc.toc(t1, output=True)
-    # timestr = f'time = {t2*1e3:0.2f} ms'
-    # print(timestr)
-    
-    # # Test a shape mismatch
-    # with pytest.raises(ValueError):
-    #     pe.calculate_distances(point=pl.rand(7), arr=pl.rand(7,4)) # Should be 4, not 7
-        
-    # if doplot:
-    #     x_ind = 0
-    #     y_ind = 1
-    #     pl.figure(figsize=figsize)
-    #     pl.scatter(arr[:,x_ind], arr[:,y_ind], c=distances, label='Samples')
-    #     pl.scatter(point[0], point[1], s=200, c=[[0]*3], label='Origin')
-    #     pl.xlabel('Parameter 1')
-    #     pl.ylabel('Parameter 2')
-    #     pl.title(f'Distance calculations (color ∝ distance); {timestr}')
-    #     pl.legend()
-    # return distances
-    
-
-
-# def test_estimation(doplot=False):
-#     sc.heading('Estimated parameter values')
-#     B = pe.BINNTS(func=objective, x=x, xmin=xmin, xmax=xmax, **binnts_pars)
-#     B.initialize_priors()
-#     B.draw_samples(init=True)
-#     B.evaluate()
-#     B.make_surfaces()
-#     B.estimate_samples()
-#     return B.bs_surfaces
+    return test_vals
 
 
 # def test_optimization():

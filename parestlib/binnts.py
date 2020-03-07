@@ -19,7 +19,7 @@ import scipy.stats as st
 __all__ = ['scaled_norm', 'knn', 'BINNTS', 'binnts']
 
 
-def scaled_norm(test, training, quantiles=None):
+def scaled_norm(test, train, quantiles='IQR'):
     '''
     Calculation of distances between a test set of points and a training set of
     points -- was going to use Numba but plenty fast without.
@@ -31,32 +31,34 @@ def scaled_norm(test, training, quantiles=None):
     '''
     
     # Handle inputs
-    if quantiles is None:
+    if quantiles in [None, 'iqr', 'IQR']:
         quantiles = [0.25, 0.75] # Default quantiles to compute scale from
+    elif not sc.checktype(quantiles, 'arraylike'):
+        raise TypeError(f'Cound not understand quantiles {type(quantiles)}: should be "IQR" or array-like')
     
     # Copy; otherwise, these get modified in place
     test = sc.dcp(test)
-    training = sc.dcp(training)
+    train = sc.dcp(train)
     
     # Dimension checking
     if test.ndim == 1:
         test = np.array([test]) # Ensure it's 2-dimensional
     
     ntest, npars = test.shape
-    ntraining, npars2 = training.shape
+    ntrain, npars2 = train.shape
     if npars != npars2:
         raise ValueError(f'Array shape appears to be incorrect: {npars2} should be {npars}')
     
     # Normalize
     for p in range(npars):
-        scale = np.diff(np.quantile(training[:,p], quantiles))
-        training[:,p] /= scale # Transform to be of comparable scale
+        scale = np.diff(np.quantile(train[:,p], quantiles))
+        train[:,p] /= scale # Transform to be of comparable scale
         test[:,p] /= scale # For test points too
         
     # The actual calculation
-    distances = np.zeros((ntest, ntraining))
+    distances = np.zeros((ntest, ntrain))
     for i in range(ntest):
-        distances[i,:] = np.linalg.norm(training - test[i,:], axis=1)
+        distances[i,:] = np.linalg.norm(train - test[i,:], axis=1)
     
     if len(distances) == 1:
         distances = distances.flatten() # If we have only a single point, return a vector of distances
@@ -64,14 +66,20 @@ def scaled_norm(test, training, quantiles=None):
     return distances
 
 
-def knn(test, training, values, k=3, nbootstrap=10, quantiles=None):
+def knn(test, train, values, k=3, nbootstrap=10, quantiles=None):
     ''' Perform k-nearest-neighbors estimation '''
     
     # Handle inputs
     if quantiles is None:  # TODO: consider separate quantiles for distance calculation
         quantiles = [0.25, 0.75] # Default quantiles to compute scale from
     
-    distances = scaled_norm(test, training, quantiles=quantiles)
+    distances = scaled_norm(test, train, quantiles=quantiles)
+    
+    ntest = len(test)
+    ntrain = len(train)
+    
+    estimates = np.zeros(ntest)
+    
     
     
     
