@@ -13,19 +13,38 @@ Version: 2020mar06
 '''
 
 import numpy as np
-# import numba as nb
 import sciris as sc
 import scipy.stats as st
 
 __all__ = ['calculate_distances', 'BINNTS', 'binnts']
 
 
-# @nb.njit((nb.float64[:], nb.float64[:,:]))
-def calculate_distances(point, arr):
-    ''' Numbafied calculation of distances '''
+def calculate_distances(point, arr, quantiles=None):
+    '''
+    Calculation of distances -- was going to use Numba but plenty fast without.
+    Before calculating distances, normalize each dimension to have the same "scale"
+    (default: interquartile range).
+    '''
+    
+    # Handle inputs
+    if quantiles is None:
+        quantiles = [0.25, 0.75] # Default quantiles to compute scale from
     npars = len(point)
     npoints = len(arr)
-    assert arr.shape == (npoints, npars), f'Array shape appears to be incorrect'
+    if arr.shape != (npoints, npars):
+        raise ValueError(f'Array shape appears to be incorrect: {arr.shape} vs {(npoints, npars)}')
+    
+    # Copy; otherwise, these get modified in place
+    point = sc.dcp(point)
+    arr = sc.dcp(arr)
+    
+    # Normalize
+    for p in range(npars):
+        scale = np.diff(np.quantile(arr[:,p], quantiles))
+        arr[:,p] /= scale # Transform to be of comparable scale
+        point[p] /= scale # For point too
+        
+    # The actual calculation
     distances = np.linalg.norm(arr - point, axis=1)
     return distances
 
@@ -141,21 +160,6 @@ class BINNTS(sc.prettyobj):
         return
     
     
-    # def step(self):
-    #     ''' Calculate new samples based on the current samples and matching results '''
-    
-    #     # Calculate ordinary least squares fit of sample parameters on results
-    #     if self.optimum == 'max': results = -self.results # Flip the sign if we're using the maximum
-    #     else:                     results =  self.results # Default, just use the stored results
-        
-    #     new_samples = self.draw_samples()
-    #     distances = np.zeros((self.npoints, self.nsamples))
-    #     # Compute distances
-        
-        
-    #     return self.samples
-    
-    
     def make_surfaces(self):
         ''' Create the bootstrapped surfaces '''
         
@@ -177,17 +181,25 @@ class BINNTS(sc.prettyobj):
         
         return
     
+    
     def estimate_samples(self):
         ''' Calculate an estimated value for each of the candidate points '''
+        
+        # Calculate distances
         distances = np.zeros((self.nbootstrap, self.ncandidates, len(self.allsamples))) # Matrix of all distances
         for b in range(self.nbootstrap):
             bs_pars = self.bs_pars[b,:,:] # e.g. 100 points with 5 parameter values
             for c in range(self.ncandidates):
                 candidate = self.candidates[c,:]
                 distances[b,c,:] = calculate_distances(candidate, bs_pars)
+        
+        # Calculate estimates
+        estimates = #
+        variances = #
+        
+        # Choose best points
+        ...
                 
-        
-        
         return
     
     

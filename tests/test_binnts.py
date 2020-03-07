@@ -111,7 +111,7 @@ def test_bootstrap(doplot=False):
 
 
 def test_distances(doplot=False):
-    npoints = 10000
+    npoints = 1000
     npars = 2
     point = pl.rand(npars)
     arr = pl.rand(npoints, npars)
@@ -120,6 +120,11 @@ def test_distances(doplot=False):
     t2 = sc.toc(t1, output=True)
     timestr = f'time = {t2*1e3:0.2f} ms'
     print(timestr)
+    
+    # Test a shape mismatch
+    with pytest.raises(ValueError):
+        pe.calculate_distances(point=pl.rand(7), arr=pl.rand(7,4)) # Should be 4, not 7
+        
     if doplot:
         x_ind = 0
         y_ind = 1
@@ -159,8 +164,8 @@ if __name__ == '__main__':
     # prior_dist = test_initial_prior(doplot=doplot)
     # samples = test_sampling(doplot=doplot)
     # bs_pars, bs_vals = test_bootstrap(doplot=doplot)
-    distances = test_distances(doplot=0)
-    # estimates = test_estimation(doplot=doplot)
+    # distances = test_distances(doplot=doplot)
+    estimates = test_estimation(doplot=doplot)
     # R = test_optimization(doplot=doplot)
     print('\n'*2)
     sc.toc()
