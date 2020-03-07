@@ -110,6 +110,30 @@ def test_bootstrap(doplot=False):
     return B.bs_pars, B.bs_vals
 
 
+def test_distances(doplot=False):
+    npoints = 10000
+    npars = 2
+    point = pl.rand(npars)
+    arr = pl.rand(npoints, npars)
+    t1 = sc.tic()
+    distances = pe.calculate_distances(point, arr)
+    t2 = sc.toc(t1, output=True)
+    timestr = f'time = {t2*1e3:0.2f} ms'
+    print(timestr)
+    if doplot:
+        x_ind = 0
+        y_ind = 1
+        pl.figure(figsize=figsize)
+        pl.scatter(arr[:,x_ind], arr[:,y_ind], c=distances, label='Samples')
+        pl.scatter(point[0], point[1], s=200, c=[[0]*3], label='Origin')
+        pl.xlabel('Parameter 1')
+        pl.ylabel('Parameter 2')
+        pl.title(f'Distance calculations (color ∝ distance); {timestr}')
+        pl.legend()
+    return distances
+    
+
+
 def test_estimation(doplot=False):
     sc.heading('Estimated parameter values')
     B = pe.BINNTS(func=objective, x=x, xmin=xmin, xmax=xmax, **binnts_pars)
@@ -117,7 +141,7 @@ def test_estimation(doplot=False):
     B.draw_samples(init=True)
     B.evaluate()
     B.make_surfaces()
-    B.estimate()
+    B.estimate_samples()
     return B.bs_surfaces
 
 
@@ -134,7 +158,8 @@ if __name__ == '__main__':
     # B = test_creation()
     # prior_dist = test_initial_prior(doplot=doplot)
     # samples = test_sampling(doplot=doplot)
-    bs_pars, bs_vals = test_bootstrap(doplot=doplot)
+    # bs_pars, bs_vals = test_bootstrap(doplot=doplot)
+    distances = test_distances(doplot=0)
     # estimates = test_estimation(doplot=doplot)
     # R = test_optimization(doplot=doplot)
     print('\n'*2)

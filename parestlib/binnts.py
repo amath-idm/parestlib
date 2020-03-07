@@ -9,24 +9,33 @@ Basic usage is:
     import parestlib as pe
     output = pe.binnts(func, x, xmin, xmax)
 
-Version: 2020mar01
+Version: 2020mar06
 '''
 
 import numpy as np
+# import numba as nb
 import sciris as sc
 import scipy.stats as st
 
-__all__ = ['BINNTS', 'binnts']
+__all__ = ['calculate_distances', 'BINNTS', 'binnts']
+
+
+# @nb.njit((nb.float64[:], nb.float64[:,:]))
+def calculate_distances(point, arr):
+    ''' Numbafied calculation of distances '''
+    npars = len(point)
+    npoints = len(arr)
+    assert arr.shape == (npoints, npars), f'Array shape appears to be incorrect'
+    distances = np.linalg.norm(arr - point, axis=1)
+    return distances
 
 
 class BINNTS(sc.prettyobj):
     '''
     Class to implement density-weighted iterative threshold sampling.
-    
-    Version: 2020feb29
     '''
     
-    def __init__(self, func, x, xmin, xmax, npoints=None, 
+    def __init__(self, func, x, xmin, xmax, neighbors=None, npoints=None, 
                  acceptance=None, nbootstrap=None, nfolds=None, leaveout=None,
                  maxiters=None, optimum=None, func_args=None, verbose=None):
         
@@ -37,11 +46,12 @@ class BINNTS(sc.prettyobj):
         self.xmax = np.array(xmax)
         
         # Handle optional arguments
+        self.neighbors   = neighbors   if neighbors  is not None else 3
         self.npoints     = npoints     if npoints    is not None else 100
         self.acceptance  = acceptance  if acceptance is not None else 0.5
         self.nbootstrap  = nbootstrap  if nbootstrap is not None else 10
-        self.nfolds      = nfolds      if nfolds     is not None else 5
-        self.leaveout    = leaveout    if leaveout   is not None else 0.2
+        # self.nfolds      = nfolds      if nfolds     is not None else 5
+        # self.leaveout    = leaveout    if leaveout   is not None else 0.2
         self.maxiters    = maxiters    if maxiters   is not None else 50
         self.optimum     = optimum     if optimum    is not None else 'min'
         self.func_args   = func_args   if func_args  is not None else {}
@@ -54,6 +64,7 @@ class BINNTS(sc.prettyobj):
         self.npriorpars   = 4 # Number of parameters in the prior distribution
         self.priorpars    = np.zeros((self.npars, self.npriorpars)) # Each parameter is defined by a 4-metaparameter prior distribution
         self.samples      = np.zeros((self.npoints, self.npars)) # Array of parameter values
+        self.candidates   = np.zeros((self.ncandidates, self.npars)) # Array of candidate samples
         self.results      = np.zeros(self.npoints) # For storing the results object (see optimize())
         self.allpriorpars = np.zeros((self.maxiters, self.npars, self.npriorpars)) # For storing history of the prior-distribution parameters
         self.allsamples   = np.zeros((0, self.npars), dtype=float) # For storing all points
@@ -113,15 +124,12 @@ class BINNTS(sc.prettyobj):
     
     def draw_samples(self, init=False): # TODO: refactor discrepancy between points and samples and candidates
         ''' Choose samples from the (current) prior distribution '''
-        if init: # Initial samples
-            for p in range(self.npars): # Loop over the parameters
+        for p in range(self.npars): # Loop over the parameters
+            if init: # Initial samples
                 self.samples[:,p] = self.beta_rvs(pars=self.priorpars[p,:], n=self.npoints)
-            return
-        else: 
-            candidates = np.zeros((self.ncandidates, self.npars))
-            for p in range(self.npars): # Loop over the parameters
-                candidates[:,p] = self.beta_rvs(pars=self.priorpars[p,:], n=self.ncandidates)
-            return candidates
+            else: 
+                self.candidates[:,p] = self.beta_rvs(pars=self.priorpars[p,:], n=self.ncandidates)
+        return
     
     
     def evaluate(self):
@@ -160,13 +168,24 @@ class BINNTS(sc.prettyobj):
                 self.bs_pars[b,:,p] = self.allsamples[bs_samples, p]
             self.bs_vals[b,:] = self.allresults[bs_samples]
         
-        # Evaluate surfaces
+        # Evaluate surfaces and choose number of neighbors
         # folds = []
         # for f in range(self.nfolds):
         #     n_inds = len(self.samples)
         #     all_inds = np.random.randint(0, n_inds)
             # in_inds = all_inds[]
         
+        return
+    
+    def estimate_samples(self):
+        ''' Calculate an estimated value for each of the candidate points '''
+        distances = np.zeros((self.nbootstrap, self.ncandidates, len(self.allsamples))) # Matrix of all distances
+        for b in range(self.nbootstrap):
+            bs_pars = self.bs_pars[b,:,:] # e.g. 100 points with 5 parameter values
+            for c in range(self.ncandidates):
+                candidate = self.candidates[c,:]
+                distances[b,c,:] = calculate_distances(candidate, bs_pars)
+                
         
         
         return
