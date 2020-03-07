@@ -16,10 +16,10 @@ import numpy as np
 import sciris as sc
 import scipy.stats as st
 
-__all__ = ['calculate_distances', 'knn', 'BINNTS', 'binnts']
+__all__ = ['scaled_norm', 'knn', 'BINNTS', 'binnts']
 
 
-def calculate_distances(test, training, quantiles=None):
+def scaled_norm(test, training, quantiles=None):
     '''
     Calculation of distances between a test set of points and a training set of
     points -- was going to use Numba but plenty fast without.
@@ -67,25 +67,11 @@ def calculate_distances(test, training, quantiles=None):
 def knn(test, training, values, k=3, nbootstrap=10, quantiles=None):
     ''' Perform k-nearest-neighbors estimation '''
     
-    # Handle inputs -- # TODO combine these checks with the distance checking
-    if quantiles is None: 
+    # Handle inputs
+    if quantiles is None:  # TODO: consider separate quantiles for distance calculation
         quantiles = [0.25, 0.75] # Default quantiles to compute scale from
     
-    # Copy; otherwise, these get modified in place
-    test = sc.dcp(test)
-    training = sc.dcp(training)
-    
-    # Dimension checking
-    if test.ndim == 1:
-        test = np.array([test]) # Ensure it's 2-dimensional
-    
-    ntest, npars = test.shape
-    ntraining, npars2 = training.shape
-    if npars != npars2:
-        raise ValueError(f'Array shape appears to be incorrect: {npars2} should be {npars}')
-    
-    
-    distances = calculate_distances(test, training)
+    distances = scaled_norm(test, training, quantiles=quantiles)
     
     
     

@@ -117,21 +117,21 @@ def test_distances(doplot=False):
     test = pl.rand(nsamples, npars)
     training = pl.rand(npoints, npars)
     t1 = sc.tic()
-    distances = pe.calculate_distances(test=test, training=training)
+    distances = pe.scaled_norm(test=test, training=training)
     t2 = sc.toc(t1, output=True)
     timestr = f'time = {t2*1e3:0.2f} ms'
     print(timestr)
     
     # Test a shape mismatch
     with pytest.raises(ValueError):
-        pe.calculate_distances(test=pl.rand(7), training=pl.rand(7,4)) # Should be 4, not 7
+        pe.scaled_norm(test=pl.rand(7), training=pl.rand(7,4)) # Should be 4, not 7
         
     if doplot:
         x_ind = 0
         y_ind = 1
         offset = 0.009
         pl.figure(figsize=figsize)
-        sc.parulacolormap(apply=True)
+        sc.parulacolormap(apply=True) # or pl.set_map('parula')
         for pt in range(2):
             markers = ['<','>']
             markersize = 50
@@ -220,8 +220,8 @@ if __name__ == '__main__':
     # prior_dist = test_initial_prior(doplot=doplot)
     # samples = test_sampling(doplot=doplot)
     # bs_pars, bs_vals = test_bootstrap(doplot=doplot)
-    # distances = test_distances(doplot=doplot)
-    estimates = test_estimates(doplot=doplot)
+    distances = test_distances(doplot=doplot)
+    # estimates = test_estimates(doplot=doplot)
     # R = test_optimization(doplot=doplot)
     print('\n'*2)
     sc.toc()
