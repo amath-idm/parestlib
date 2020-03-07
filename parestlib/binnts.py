@@ -26,7 +26,9 @@ class BINNTS(sc.prettyobj):
     Version: 2020feb29
     '''
     
-    def __init__(self, func, x, xmin, xmax, npoints=None, acceptance=None, nbootstrap=None, maxiters=None, optimum=None, func_args=None, verbose=None):
+    def __init__(self, func, x, xmin, xmax, npoints=None, 
+                 acceptance=None, nbootstrap=None, nfolds=None, leaveout=None,
+                 maxiters=None, optimum=None, func_args=None, verbose=None):
         
         # Handle required arguments
         self.func = func
@@ -38,7 +40,9 @@ class BINNTS(sc.prettyobj):
         self.npoints     = npoints     if npoints    is not None else 100
         self.acceptance  = acceptance  if acceptance is not None else 0.5
         self.nbootstrap  = nbootstrap  if nbootstrap is not None else 10
-        self.maxiters    = maxiters    if maxiters   is not None else 50 
+        self.nfolds      = nfolds      if nfolds     is not None else 5
+        self.leaveout    = leaveout    if leaveout   is not None else 0.2
+        self.maxiters    = maxiters    if maxiters   is not None else 50
         self.optimum     = optimum     if optimum    is not None else 'min'
         self.func_args   = func_args   if func_args  is not None else {}
         self.verbose     = verbose     if verbose    is not None else 2
@@ -51,9 +55,9 @@ class BINNTS(sc.prettyobj):
         self.priorpars    = np.zeros((self.npars, self.npriorpars)) # Each parameter is defined by a 4-metaparameter prior distribution
         self.samples      = np.zeros((self.npoints, self.npars)) # Array of parameter values
         self.results      = np.zeros(self.npoints) # For storing the results object (see optimize())
-        self.allpriorpars = [] # For storing history of the prior-distribution parameters
-        self.allsamples   = [] # For storing all points
-        self.allresults   = [] # For storing all results
+        self.allpriorpars = np.zeros((self.maxiters, self.npars, self.npriorpars)) # For storing history of the prior-distribution parameters
+        self.allsamples   = np.zeros((0, self.npars), dtype=float) # For storing all points
+        self.allresults   = np.zeros(0, dtype=float) # For storing all results
         
         return
     
@@ -103,6 +107,7 @@ class BINNTS(sc.prettyobj):
             else:
                 raise NotImplementedError('Currently, only "uniform" and "best" priors are supported')
             self.priorpars[p,:] = [alpha, beta, xloc, xscale]
+        self.allpriorpars[self.iteration,:,:] = self.priorpars
         return
     
     
@@ -123,7 +128,8 @@ class BINNTS(sc.prettyobj):
         ''' Actually evaluate the objective function '''
         for s,sample in enumerate(self.samples): # TODO: parallelize
             self.results[s] = self.func(sample, **self.func_args) # This is the time-consuming step!!
-        self.allresults.append(sc.dcp(self.results))
+        self.allsamples = np.concatenate([self.allsamples, self.samples])
+        self.allresults = np.concatenate([self.allresults, self.results])
         return
     
     
@@ -144,12 +150,24 @@ class BINNTS(sc.prettyobj):
     
     def make_surfaces(self):
         ''' Create the bootstrapped surfaces '''
-        self.bs_surfaces = np.zeros((self.nbootstrap, len(self.samples), self.npars+1))
+        
+        # Create surfaces
+        self.bs_pars = np.zeros((self.nbootstrap, len(self.allsamples), self.npars))
+        self.bs_vals = np.zeros((self.nbootstrap, len(self.allsamples)))
         for b in range(self.nbootstrap):
-            bs_samples = np.random.randint(0, len(self.samples), len(self.samples)) # TODO should be able to use npoints or nsamples?!
+            bs_samples = np.random.randint(0, len(self.allsamples), len(self.allsamples)) # TODO should be able to use npoints or nsamples?!
             for p in range(self.npars):
-                self.bs_surfaces[b,:,p] = self.samples[bs_samples, p]
-            self.bs_surfaces[b,:,-1] = self.results[bs_samples]
+                self.bs_pars[b,:,p] = self.allsamples[bs_samples, p]
+            self.bs_vals[b,:] = self.allresults[bs_samples]
+        
+        # Evaluate surfaces
+        # folds = []
+        # for f in range(self.nfolds):
+        #     n_inds = len(self.samples)
+        #     all_inds = np.random.randint(0, n_inds)
+            # in_inds = all_inds[]
+        
+        
         
         return
     

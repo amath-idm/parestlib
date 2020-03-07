@@ -95,26 +95,30 @@ def test_bootstrap(doplot=False):
         sf = 300 # Scale factor from value to point size for plotting
         x_ind = 0 # Which parameter corresponds to the x axis -- just for plotting
         y_ind = 1 # Ditto for y
-        val_ind = B.npars # The value for sims is stored after the parameters
         pl.figure(figsize=figsize)
         for b in range(B.nbootstrap):
             pl.clf()
-            this_bs = B.bs_surfaces[b]
+            this_bs = B.bs_pars[b]
+            vals = B.bs_vals[b]
             p1 = this_bs[:,x_ind]
             p2 = this_bs[:,y_ind]
-            val = this_bs[:,val_ind]
-            pl.scatter(p1, p2, s=val*sf)
+            pl.scatter(p1, p2, s=vals*sf)
             pl.title(f'Bootstrap {b+1} of {B.nbootstrap}, size ∝ error')
             pl.xlim([B.xmin[x_ind], B.xmax[x_ind]])
             pl.ylim([B.xmin[y_ind], B.xmax[y_ind]])
             pl.pause(0.2)
-    return B.bs_surfaces
+    return B.bs_pars, B.bs_vals
 
 
 def test_estimation(doplot=False):
-    sc.heading('Bootstrapped parameter values')
-    
-    
+    sc.heading('Estimated parameter values')
+    B = pe.BINNTS(func=objective, x=x, xmin=xmin, xmax=xmax, **binnts_pars)
+    B.initialize_priors()
+    B.draw_samples(init=True)
+    B.evaluate()
+    B.make_surfaces()
+    B.estimate()
+    return B.bs_surfaces
 
 
 # def test_optimization():
@@ -127,10 +131,11 @@ def test_estimation(doplot=False):
 #%% Run as a script -- comment out lines to turn off tests
 if __name__ == '__main__':
     sc.tic()
-    B = test_creation()
-    prior_dist = test_initial_prior(doplot=doplot)
-    samples = test_sampling(doplot=doplot)
-    bs_surfaces = test_bootstrap(doplot=doplot)
+    # B = test_creation()
+    # prior_dist = test_initial_prior(doplot=doplot)
+    # samples = test_sampling(doplot=doplot)
+    bs_pars, bs_vals = test_bootstrap(doplot=doplot)
+    # estimates = test_estimation(doplot=doplot)
     # R = test_optimization(doplot=doplot)
     print('\n'*2)
     sc.toc()
