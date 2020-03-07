@@ -16,7 +16,7 @@ import numpy as np
 import sciris as sc
 import scipy.stats as st
 
-__all__ = ['calculate_distances', 'BINNTS', 'binnts']
+__all__ = ['calculate_distances', 'knn', 'BINNTS', 'binnts']
 
 
 def calculate_distances(test, training, quantiles=None):
@@ -64,12 +64,28 @@ def calculate_distances(test, training, quantiles=None):
     return distances
 
 
-def knn_estimate(test, training, values, k=3, quantiles=None):
-    ''' Perform nearest-neighbor estimation '''
+def knn(test, training, values, k=3, nbootstrap=10, quantiles=None):
+    ''' Perform k-nearest-neighbors estimation '''
     
-    # Handle inputs
-    if quantiles is None:
+    # Handle inputs -- # TODO combine these checks with the distance checking
+    if quantiles is None: 
         quantiles = [0.25, 0.75] # Default quantiles to compute scale from
+    
+    # Copy; otherwise, these get modified in place
+    test = sc.dcp(test)
+    training = sc.dcp(training)
+    
+    # Dimension checking
+    if test.ndim == 1:
+        test = np.array([test]) # Ensure it's 2-dimensional
+    
+    ntest, npars = test.shape
+    ntraining, npars2 = training.shape
+    if npars != npars2:
+        raise ValueError(f'Array shape appears to be incorrect: {npars2} should be {npars}')
+    
+    
+    distances = calculate_distances(test, training)
     
     
     
@@ -193,17 +209,17 @@ class BINNTS(sc.prettyobj):
         return
     
     
-    def make_surfaces(self):
-        ''' Create the bootstrapped surfaces '''
+    # def make_surfaces(self):
+    #     ''' Create the bootstrapped surfaces '''
         
-        # Create surfaces
-        self.bs_pars = np.zeros((self.nbootstrap, len(self.allsamples), self.npars))
-        self.bs_vals = np.zeros((self.nbootstrap, len(self.allsamples)))
-        for b in range(self.nbootstrap):
-            bs_samples = np.random.randint(0, len(self.allsamples), len(self.allsamples)) # TODO should be able to use npoints or nsamples?!
-            for p in range(self.npars):
-                self.bs_pars[b,:,p] = self.allsamples[bs_samples, p]
-            self.bs_vals[b,:] = self.allresults[bs_samples]
+    #     # Create surfaces
+    #     self.bs_pars = np.zeros((self.nbootstrap, len(self.allsamples), self.npars))
+    #     self.bs_vals = np.zeros((self.nbootstrap, len(self.allsamples)))
+    #     for b in range(self.nbootstrap):
+    #         bs_samples = np.random.randint(0, len(self.allsamples), len(self.allsamples)) # TODO should be able to use npoints or nsamples?!
+    #         for p in range(self.npars):
+    #             self.bs_pars[b,:,p] = self.allsamples[bs_samples, p]
+    #         self.bs_vals[b,:] = self.allresults[bs_samples]
         
         # Evaluate surfaces and choose number of neighbors
         # folds = []
@@ -212,14 +228,14 @@ class BINNTS(sc.prettyobj):
         #     all_inds = np.random.randint(0, n_inds)
             # in_inds = all_inds[]
         
-        return
+        # return
     
     
     def estimate_samples(self):
         ''' Calculate an estimated value for each of the candidate points '''
         
         # Calculate distances
-        distances = np.zeros((self.nbootstrap, self.ncandidates, len(self.allsamples))) # Matrix of all distances
+        distances = np.zeros((self.ncandidates, len(self.allsamples))) # Matrix of all distances
         for b in range(self.nbootstrap):
             bs_pars = self.bs_pars[b,:,:] # e.g. 100 points with 5 parameter values
             for c in range(self.ncandidates): # TODO: move this loop inside calculate_distances
@@ -227,7 +243,7 @@ class BINNTS(sc.prettyobj):
                 distances[b,c,:] = calculate_distances(point=candidate, arr=bs_pars)
         
         # Calculate estimates
-        estimates, variances = nn_estimation(points=self.candidates, distances=distances, values=self.bs_vals)
+        estimates, variances = knn(points=self.candidates, distances=distances, values=self.bs_vals)
         
         # Choose best points
         ...
