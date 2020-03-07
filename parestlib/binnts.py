@@ -66,8 +66,25 @@ def scaled_norm(test, train, quantiles='IQR'):
     return distances
 
 
-def knn(test, train, values, k=3, nbootstrap=10, quantiles=None):
-    ''' Perform k-nearest-neighbors estimation '''
+def knn(test, train, values, k=3, nbootstrap=10, weighted=False, quantiles=None):
+    '''
+    Perform k-nearest-neighbors estimation.
+    
+    Args:
+        test (NxP float): Test set: N points in P-dimensional space for which the values need to be estimated
+        train (MxP float): Training set: M pointsin P-dimensional space for which the values are known
+        values (M float): Values to match the training data
+        k (int): Number of nearest neighbors; default 3
+        nbootstrap (int): Number of bootstrap iterations; default 10
+        weighted (bool): Whether or not neighbors should be weighted by distance; default False
+        quantiles (2 int): Pair of quantiles for bound estimation; default IQR [0.25, 0.75]
+    
+    Returns:
+        output (objdict): An object with best, low, and high estimates of the value at each test point
+    '''
+    
+    if weighted:
+        raise NotImplementedError('Distance weighting is not yet implemented')
     
     # Handle inputs
     if quantiles is None:  # TODO: consider separate quantiles for distance calculation
@@ -78,12 +95,17 @@ def knn(test, train, values, k=3, nbootstrap=10, quantiles=None):
     ntest = len(test)
     ntrain = len(train)
     
-    estimates = np.zeros(ntest)
+    # Initialize output
+    output = sc.objdict()
+    for key in ['best', 'low', 'high']:
+        output[key] = np.zeros(ntest)
     
     
     
     
-    return estimates, lower, upper
+    
+    
+    return output
 
 
 class BINNTS(sc.prettyobj):

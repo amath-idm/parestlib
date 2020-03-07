@@ -1,4 +1,11 @@
+import os
+import runpy
 from setuptools import setup, find_packages
+
+# Get version
+cwd = os.path.abspath(os.path.dirname(__file__))
+versionpath = os.path.join(cwd, 'parestlib', 'version.py')
+version = runpy.run_path(versionpath)['__version__']
 
 CLASSIFIERS = [
     "Environment :: Console",
@@ -13,7 +20,7 @@ CLASSIFIERS = [
 
 setup(
     name="parestlib",
-    version="0.2",
+    version=version,
     author="Cliff Kerr, Daniel Klein",
     author_email="ckerr@idmod.org",
     description="Parameter estimation library",
@@ -23,9 +30,9 @@ setup(
     packages=find_packages(),
     include_package_data=True,
     install_requires=[
-        "matplotlib>=1.4.2",
+        "matplotlib>=2.2.2",
         "numpy>=1.10.1",
         "scipy>=1.2.0",
-        "sciris>=0.14.0",
+        "sciris>=0.15.6",
     ],
 )
