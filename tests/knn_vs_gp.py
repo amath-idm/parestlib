@@ -13,9 +13,11 @@ sc.tic()
 ntrain = 200
 ntest  = 50
 npars  = 2
-noise  = 0.5
+noise  = 1.0
+seed   = 1
 
 # Set up training and test arrays
+pl.seed(seed)
 train_arr = pl.rand(ntrain, npars)
 test_arr = pl.rand(ntest, npars)
 train_vals = pl.sqrt(((train_arr-0.5)**2).sum(axis=1)) + noise*(pl.rand(ntrain)-0.5) # Distance from center
