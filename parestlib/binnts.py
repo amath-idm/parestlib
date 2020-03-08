@@ -24,7 +24,8 @@ class BINNTS(sc.prettyobj):
     
     def __init__(self, func, x, xmin, xmax, neighbors=None, npoints=None, 
                  acceptance=None, nbootstrap=None, nfolds=None, leaveout=None,
-                 maxiters=None, optimum=None, func_args=None, verbose=None):
+                 maxiters=None, optimum=None, func_args=None, verbose=None,
+                 parallel_args=None, parallelize=None):
         
         # Handle required arguments
         self.func = func
@@ -37,8 +38,6 @@ class BINNTS(sc.prettyobj):
         self.npoints       = npoints       if npoints       is not None else 100
         self.acceptance    = acceptance    if acceptance    is not None else 0.5
         self.nbootstrap    = nbootstrap    if nbootstrap    is not None else  10
-        # self.nfolds        = nfolds        if nfolds        is not None else 5
-        # self.leaveout      = leaveout      if leaveout      is not None else 0.2
         self.maxiters      = maxiters      if maxiters      is not None else 50
         self.optimum       = optimum       if optimum       is not None else 'min'
         self.func_args     = func_args     if func_args     is not None else {}
