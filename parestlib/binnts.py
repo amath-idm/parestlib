@@ -21,7 +21,7 @@ class BINNTS(sc.prettyobj):
     Class to implement density-weighted iterative threshold sampling.
     '''
     
-    def __init__(self, func, x, xmin, xmax, neighbors=None, npoints=None, 
+    def __init__(self, func, x, xmin, xmax, neighbors=None, nsamples=None, 
                  acceptance=None, k=None, nbootstrap=None, quantile=None,
                  maxiters=None, optimum=None, func_args=None, verbose=None,
                  parallel_args=None, parallelize=None):
@@ -34,7 +34,7 @@ class BINNTS(sc.prettyobj):
         
         # Handle optional arguments
         self.neighbors     = neighbors     if neighbors     is not None else 3
-        self.npoints       = npoints       if npoints       is not None else 100
+        self.nsamples      = nsamples      if nsamples      is not None else 100
         self.acceptance    = acceptance    if acceptance    is not None else 0.5
         self.k             = k             if k             is not None else 3
         self.nbootstrap    = nbootstrap    if nbootstrap    is not None else 10
@@ -47,14 +47,14 @@ class BINNTS(sc.prettyobj):
         self.parallelize   = parallelize   if parallelize   is not None else False
         
         # Set up results
-        self.ncandidates  = int(self.npoints/self.acceptance)
+        self.ncandidates  = int(self.nsamples/self.acceptance)
         self.iteration    = 0
         self.npars        = len(x) # Number of parameters being fit
         self.npriorpars   = 4 # Number of parameters in the prior distribution
         self.priorpars    = np.zeros((self.npars, self.npriorpars)) # Each parameter is defined by a 4-metaparameter prior distribution
-        self.samples      = np.zeros((self.npoints, self.npars)) # Array of parameter values
+        self.samples      = np.zeros((self.nsamples, self.npars)) # Array of parameter values
         self.candidates   = np.zeros((self.ncandidates, self.npars)) # Array of candidate samples
-        self.values      = np.zeros(self.npoints) # For storing the values object (see optimize())
+        self.values      = np.zeros(self.nsamples) # For storing the values object (see optimize())
         self.allpriorpars = np.zeros((self.maxiters, self.npars, self.npriorpars)) # For storing history of the prior-distribution parameters
         self.allsamples   = np.zeros((0, self.npars), dtype=float) # For storing all points
         self.allvalues   = np.zeros(0, dtype=float) # For storing all values
@@ -96,7 +96,7 @@ class BINNTS(sc.prettyobj):
     def draw_initial_samples(self): # TODO: refactor discrepancy between points and samples and candidates
         ''' Choose samples from the (current) prior distribution '''
         for p in range(self.npars): # Loop over the parameters
-            self.samples[:,p] = ut.beta_rvs(pars=self.priorpars[p,:], n=self.npoints)
+            self.samples[:,p] = ut.beta_rvs(pars=self.priorpars[p,:], n=self.nsamples)
         return
     
     
