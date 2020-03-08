@@ -9,16 +9,22 @@ from history_matching.basis import Basis
 ntrain = 200
 ntest  = 50
 npars  = 2
-noise  = 1
+noise  = 0.3
 
-def f(x):
-    return pl.sqrt(((x-0.5)**2).sum(axis=1))
+def gen_vals(raw, noise, dist='uniform'):
+    ''' Calculate the noisy distance from the center '''
+    output = pl.sqrt(((raw-raw.mean())**2).sum(axis=1))
+    if dist == 'uniform':
+        output += noise*(pl.rand(len(output)))
+    elif dist == 'gaussian':
+        output += noise*(pl.randn(len(output)))
+    return output
 
 # Set up training and test arrays
 train_arr = pl.rand(ntrain, npars)
-train_vals = f(train_arr) + noise*(pl.rand(ntrain)-0.5) # Distance from center
+train_vals = gen_vals(train_arr, noise=noise)
 test_arr = pl.rand(ntest, npars)
-test_vals = f(test_arr)
+test_vals = gen_vals(test_arr, noise=noise)
 
 par_names = [f'x{i}' for i in range(npars)]
 param_info = pd.DataFrame( {'Min':[0,0], 'Max':[1,1]}, index=par_names)
