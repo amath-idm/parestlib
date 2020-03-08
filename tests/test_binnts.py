@@ -151,12 +151,12 @@ def test_distances(doplot=False):
 def test_estimates(doplot=False, verbose=False):
     
     # Set parameters
-    ntrain     = 1000
-    ntest      = 8
+    ntrain     = 200
+    ntest      = 20
     nbootstrap = 10
     k          = 3
     npars      = 2
-    noise      = 1.0
+    noise      = 0.5
     
     # Set up training and test arrays
     train_arr = pl.rand(ntrain, npars)
@@ -175,25 +175,31 @@ def test_estimates(doplot=False, verbose=False):
         xind = 0
         yind = 1
         offset = 0.015
+        cmap = 'parula'
         x_off = offset*pl.array([0, -1, 0, 1, 0]) # Offsets in the x direction
         y_off = offset*pl.array([-1, 0, 0, 0, 1]) # Offsets in the y direction
         train_args = dict(marker='o', s=50)
         test_args  = dict(marker='s', s=80)
-        colors = sc.arraycolors(test_vals.array, cmap='parula')
+        minval = min(train_vals.min(), test_vals.array.min())
+        maxval = min(train_vals.max(), test_vals.array.max())
+        print(minval)
+        print(maxval)
+        train_colors = sc.arraycolors(train_vals,      cmap=cmap, minval=minval, maxval=maxval)
+        test_colors  = sc.arraycolors(test_vals.array, cmap=cmap, minval=minval, maxval=maxval)
         
         # Make the figure
         pl.figure(figsize=eqfigsize)
-        sc.parulacolormap(apply=True) # or pl.set_map('parula')
-        pl.scatter(train_arr[:,xind], train_arr[:,yind], c=train_vals, **train_args, label='Training')
-        # pl.clim((test_vals.array.min(), test_vals.array.max()))
+        pl.scatter(train_arr[:,xind], train_arr[:,yind], c=train_colors, **train_args, label='Training')
+        
+        # Plot the data
         for q in range(ntest):
             for i in range(5):
                 label = 'Predicted' if i==0 and q==0 else None # To avoid appearing multiple times
                 x = test_arr[q,xind]+x_off[i]
                 y = test_arr[q,yind]+y_off[i]
                 v = test_vals.array[i,q]
-                c = colors[i,q]
-                pl.scatter(x, y, c=c, **test_args, label=label)
+                c = test_colors[i,q]
+                pl.scatter(x, y, c=[c], **test_args, label=label)
                 if verbose:
                     print(f'i={i}, q={q}, x={x:0.3f}, y={y:0.3f}, v={v:0.3f}, c={c}')
                     pl.pause(0.3)
@@ -202,11 +208,10 @@ def test_estimates(doplot=False, verbose=False):
         pl.ylabel('Parameter 2')
         pl.title(f'Parameter estimates; {timestr}')
         pl.legend()
-        pl.colorbar()
+        pl.set_cmap(cmap)
+        pl.clim((minval, maxval))
         pl.axis('square')
-        
-        sc.vectocolor
-        
+        pl.colorbar()
     
     return test_vals
 
