@@ -4,9 +4,37 @@ Numerical utilities; currently used for BINNTs.
 
 import numpy as np
 import sciris as sc
+import scipy.stats as st
 
-__all__ = ['scaled_norm', 'bootknn']
+__all__ = ['beta_pdf', 'beta_rvs', 'beta_fit', 'scaled_norm', 'bootknn']
 
+
+#%% Beta distribution helper functions
+
+def beta_pdf(pars, xvec):
+    ''' Shortcut to the scipy.stats beta PDF function -- not used currently, but nice to have '''
+    if len(pars) != 4:
+        raise Exception(f'Beta distribution parameters must have length 4, not {len(pars)}')
+    pdf = st.beta.pdf(x=xvec, a=pars[0], b=pars[1], loc=pars[2], scale=pars[3])
+    return pdf
+
+
+def beta_rvs(pars, n):
+    ''' Shortcut to the scipy.stats beta random variates function '''
+    if len(pars) != 4:
+        raise Exception(f'Beta distribution parameters must have length 4, not {len(pars)}')
+    rvs = st.beta.rvs(a=pars[0], b=pars[1], loc=pars[2], scale=pars[3], size=n)
+    return rvs
+
+
+def beta_fit(data):
+    ''' Fit a beta distribution to the data '''
+    mu, std, a, b = st.beta.fit(data)
+    pars = np.array([mu, std, a, b], dtype=float)
+    return pars
+    
+
+#%% Estimation functions
 
 def scaled_norm(test, train, quantiles='IQR'):
     '''

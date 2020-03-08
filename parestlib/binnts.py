@@ -11,7 +11,6 @@ Version: 2020mar07
 
 import numpy as np
 import sciris as sc
-import scipy.stats as st
 from . import utils as ut
 
 __all__ = ['BINNTS', 'binnts']
@@ -63,24 +62,6 @@ class BINNTS(sc.prettyobj):
         return
     
     
-    @staticmethod
-    def beta_pdf(pars, xvec):
-        ''' Shortcut to the scipy.stats beta PDF function -- not used currently, but nice to have '''
-        if len(pars) != 4:
-            raise Exception(f'Beta distribution parameters must have length 4, not {len(pars)}')
-        pdf = st.beta.pdf(x=xvec, a=pars[0], b=pars[1], loc=pars[2], scale=pars[3])
-        return pdf
-    
-    
-    @staticmethod
-    def beta_rvs(pars, n):
-        ''' Shortcut to the scipy.stats beta random variates function '''
-        if len(pars) != 4:
-            raise Exception(f'Beta distribution parameters must have length 4, not {len(pars)}')
-        rvs = st.beta.rvs(a=pars[0], b=pars[1], loc=pars[2], scale=pars[3], size=n)
-        return rvs
-    
-    
     def initialize_priors(self, prior='best', width=0.5):
         ''' Create the initial prior distributions '''
         if isinstance(prior, type(np.array([]))):
@@ -116,13 +97,13 @@ class BINNTS(sc.prettyobj):
         ''' Choose samples from the (current) prior distribution '''
         for p in range(self.npars): # Loop over the parameters
             if init: # Initial samples
-                self.samples[:,p] = self.beta_rvs(pars=self.priorpars[p,:], n=self.npoints)
+                self.samples[:,p] = ut.beta_rvs(pars=self.priorpars[p,:], n=self.npoints)
             else: 
                 self.candidates[:,p] = self.beta_rvs(pars=self.priorpars[p,:], n=self.ncandidates)
         return
     
     
-    def evaluate(self):
+    def evaluate_samples(self):
         ''' Actually evaluate the objective function -- copied from shell_step.py '''
         if not self.parallelize:
             for s,sample in enumerate(self.samples):
@@ -143,10 +124,21 @@ class BINNTS(sc.prettyobj):
         estimates = output[which]
         
         # Choose best points
-        ...
-                
+        order = estimates.argsort()
+        best_inds = order[:self.nsamples]
+        self.samples = self.candidates[best_inds]
         return
     
+    
+    def refit_priors(self):
+        ''' Refit the parameters of the prior distribution, presumably tightening it '''
+        for p in range(self.npars): # Loop over the parameters
+            values = self.samples[:,p]
+            pars = ut.beta_fit(values)
+            self.priorpars[p,:] = pars
+        self.allpriorpars[self.iteration,:,:] = self.priorpars
+        return
+        
     
     def optimize(self):
         ''' Actually perform an optimization '''
@@ -155,11 +147,12 @@ class BINNTS(sc.prettyobj):
         self.evaluate_samples() # Evaluate the objective function at each sample point
         for i in range(self.maxiters): # Iterate
             if self.verbose>=1: print(f'Step {i+1} of {self.maxiters}')
+            self.iteration += 1
             self.draw_candidates() # Draw a new set of candidate points
-            self.choose_samples() # Use DWKNN
-            self.evaluate_samples()
+            self.choose_samples() # Find new samples
+            self.evaluate_samples() # Evaluate new samples
             self.check_fit()
-            self.refit_priors()
+            self.refit_priors() # Refit the priors to the samples # TODO: allsamples or latest?
         
         # Create output structure
         output = sc.objdict()
