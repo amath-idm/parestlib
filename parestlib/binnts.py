@@ -15,97 +15,9 @@ Version: 2020mar06
 import numpy as np
 import sciris as sc
 import scipy.stats as st
+from . import utils as ut
 
-__all__ = ['scaled_norm', 'knn', 'BINNTS', 'binnts']
-
-
-def scaled_norm(test, train, quantiles='IQR'):
-    '''
-    Calculation of distances between a test set of points and a training set of
-    points -- was going to use Numba but plenty fast without.
-    
-    Before calculating distances, normalize each dimension to have the same "scale"
-    (default: interquartile range).
-    
-    "test" can be a single point or an array of points.
-    '''
-    
-    # Handle inputs
-    if quantiles in [None, 'iqr', 'IQR']:
-        quantiles = [0.25, 0.75] # Default quantiles to compute scale from
-    elif not sc.checktype(quantiles, 'arraylike'):
-        raise TypeError(f'Cound not understand quantiles {type(quantiles)}: should be "IQR" or array-like')
-    
-    # Copy; otherwise, these get modified in place
-    test = sc.dcp(test)
-    train = sc.dcp(train)
-    
-    # Dimension checking
-    if test.ndim == 1:
-        test = np.array([test]) # Ensure it's 2-dimensional
-    
-    ntest, npars = test.shape
-    ntrain, npars2 = train.shape
-    if npars != npars2:
-        raise ValueError(f'Array shape appears to be incorrect: {npars2} should be {npars}')
-    
-    # Normalize
-    for p in range(npars):
-        scale = np.diff(np.quantile(train[:,p], quantiles))
-        train[:,p] /= scale # Transform to be of comparable scale
-        test[:,p] /= scale # For test points too
-        
-    # The actual calculation
-    distances = np.zeros((ntest, ntrain))
-    for i in range(ntest):
-        distances[i,:] = np.linalg.norm(train - test[i,:], axis=1)
-    
-    if len(distances) == 1:
-        distances = distances.flatten() # If we have only a single point, return a vector of distances
-    
-    return distances
-
-
-def knn(test, train, values, k=3, nbootstrap=10, weighted=False, quantiles=None):
-    '''
-    Perform k-nearest-neighbors estimation.
-    
-    Args:
-        test (NxP float): Test set: N points in P-dimensional space for which the values need to be estimated
-        train (MxP float): Training set: M pointsin P-dimensional space for which the values are known
-        values (M float): Values to match the training data
-        k (int): Number of nearest neighbors; default 3
-        nbootstrap (int): Number of bootstrap iterations; default 10
-        weighted (bool): Whether or not neighbors should be weighted by distance; default False
-        quantiles (2 int): Pair of quantiles for bound estimation; default IQR [0.25, 0.75]
-    
-    Returns:
-        output (objdict): An object with best, low, and high estimates of the value at each test point
-    '''
-    
-    if weighted:
-        raise NotImplementedError('Distance weighting is not yet implemented')
-    
-    # Handle inputs
-    if quantiles is None:  # TODO: consider separate quantiles for distance calculation
-        quantiles = [0.25, 0.75] # Default quantiles to compute scale from
-    
-    distances = scaled_norm(test, train, quantiles=quantiles)
-    
-    ntest = len(test)
-    ntrain = len(train)
-    
-    # Initialize output
-    output = sc.objdict()
-    for key in ['best', 'low', 'high']:
-        output[key] = np.zeros(ntest)
-    
-    
-    
-    
-    
-    
-    return output
+__all__ = ['BINNTS', 'binnts']
 
 
 class BINNTS(sc.prettyobj):
@@ -250,16 +162,16 @@ class BINNTS(sc.prettyobj):
     def estimate_samples(self):
         ''' Calculate an estimated value for each of the candidate points '''
         
-        # Calculate distances
-        distances = np.zeros((self.ncandidates, len(self.allsamples))) # Matrix of all distances
-        for b in range(self.nbootstrap):
-            bs_pars = self.bs_pars[b,:,:] # e.g. 100 points with 5 parameter values
-            for c in range(self.ncandidates): # TODO: move this loop inside calculate_distances
-                candidate = self.candidates[c,:]
-                distances[b,c,:] = calculate_distances(point=candidate, arr=bs_pars)
+        # # Calculate distances
+        # distances = np.zeros((self.ncandidates, len(self.allsamples))) # Matrix of all distances
+        # for b in range(self.nbootstrap):
+        #     bs_pars = self.bs_pars[b,:,:] # e.g. 100 points with 5 parameter values
+        #     for c in range(self.ncandidates): # TODO: move this loop inside calculate_distances
+        #         candidate = self.candidates[c,:]
+        #         distances[b,c,:] = calculate_distances(point=candidate, arr=bs_pars)
         
         # Calculate estimates
-        estimates, variances = knn(points=self.candidates, distances=distances, values=self.bs_vals)
+        output = ut.knn(points=self.candidates, distances=distances, values=self.bs_vals)
         
         # Choose best points
         ...
