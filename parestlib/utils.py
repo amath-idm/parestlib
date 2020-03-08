@@ -1,0 +1,128 @@
+'''
+Numerical utilities; currently used for BINNTs.
+'''
+
+import numpy as np
+import sciris as sc
+
+__all__ = ['scaled_norm', 'knn']
+
+
+def scaled_norm(test, train, quantiles='IQR'):
+    '''
+    Calculation of distances between a test set of points and a training set of
+    points -- was going to use Numba but plenty fast without.
+    
+    Before calculating distances, normalize each dimension to have the same "scale"
+    (default: interquartile range).
+    
+    "test" can be a single point or an array of points.
+    '''
+    
+    # Handle inputs
+    if quantiles in [None, 'iqr', 'IQR']:
+        quantiles = [0.25, 0.75] # Default quantiles to compute scale from
+    elif not sc.checktype(quantiles, 'arraylike'):
+        raise TypeError(f'Cound not understand quantiles {type(quantiles)}: should be "IQR" or array-like')
+    
+    # Copy; otherwise, these get modified in place
+    test = sc.dcp(test)
+    train = sc.dcp(train)
+    
+    # Dimension checking
+    if test.ndim == 1:
+        test = np.array([test]) # Ensure it's 2-dimensional
+    
+    ntest, npars = test.shape
+    ntrain, npars2 = train.shape
+    if npars != npars2:
+        raise ValueError(f'Array shape appears to be incorrect: {npars2} should be {npars}')
+    
+    # Normalize
+    for p in range(npars):
+        scale = np.diff(np.quantile(train[:,p], quantiles))
+        train[:,p] /= scale # Transform to be of comparable scale
+        test[:,p] /= scale # For test points too
+        
+    # The actual calculation
+    distances = np.zeros((ntest, ntrain))
+    for i in range(ntest):
+        distances[i,:] = np.linalg.norm(train - test[i,:], axis=1)
+    
+    if len(distances) == 1:
+        distances = distances.flatten() # If we have only a single point, return a vector of distances
+    
+    return distances
+
+
+def knn(test, train, values, k=3, nbootstrap=10, weighted=0, scale_quantiles=None, output_quantiles=None, which='all'):
+    '''
+    Perform k-nearest-neighbors estimation.
+    
+    Args:
+        test (NxP float): Test set: N points in P-dimensional space for which the values need to be estimated
+        train (MxP float): Training set: M pointsin P-dimensional space for which the values are known
+        values (M float): Values to match the training data
+        k (int): Number of nearest neighbors; default 3
+        nbootstrap (int): Number of bootstrap iterations; default 10
+        weighted (float): Whether or not neighbors should be weighted by distance; default 0, 1=50% weight to distance, 10=90% weight
+        scale_quantiles (2 int): Pair of quantiles for bound estimation
+        output_quantiles (2 int): Pair of quantiles for the low and high estimates of the output
+        which (str): Which quantity to output, can be 'best', 'min', etc.; default 'all', which returns the full object
+    
+    Returns:
+        output (objdict): An object with best, low, and high estimates of the value at each test point
+    '''
+    
+    # Handle inputs
+    if scale_quantiles is None:
+        scale_quantiles = [0.25, 0.75]
+    if output_quantiles is None:
+        output_quantiles = [0.25, 0.75]
+    
+    # Calculate MxN distance array
+    distances = scaled_norm(test, train, quantiles=scale_quantiles)
+    
+    # Array for holding all points # TODO: Numbafy if slow
+    ntest = len(test)
+    ntrain = len(train)
+    est_arr = np.zeros((ntest, nbootstrap))
+    for b in range(nbootstrap):
+        bs_inds = np.random.randint(0, ntrain, ntrain) # Bootstrapped indices of the training data
+        # bs_train = train[bs_inds,:]
+        bs_values = values[bs_inds]
+        bs_distances = distances[:,bs_inds]
+        for p in range(ntest):
+            point_dists = bs_distances[p,:]
+            order = point_dists.argsort() # Sort by distance # TODO: consider np.argpartition if slow
+            neighbor_inds = order[:k] # Pick out the k-nearest neighbors
+            neighbor_values = bs_values[neighbor_inds]
+            if weighted:
+                neighbor_dists = point_dists[neighbor_inds]
+                neighbor_dists /= neighbor_dists.max() # Normalize
+                closeness = 1.0/(neighbor_dists+1/weighted) # Scale by the 
+                est = (neighbor_values*closeness).sum()/closeness.sum()
+            else:
+                est = neighbor_values.mean() # TODO: is it consistent to take the mean here but the median later?
+            est_arr[p,b] = est
+    
+    # Calculate statistics
+    quantiles = [0, output_quantiles[0], 0.5, output_quantiles[1], 1]
+    stats = np.quantile(est_arr[:,:], quantiles, axis=1)
+    
+    # Construct output
+    output = sc.objdict()
+    output_keys = ['min', 'low', 'best', 'high', 'max']
+    for k,key in enumerate(output_keys):
+        output[key] = stats[k,:]
+    output.quantiles = quantiles # Store the quantiles
+    output.array = stats # Store the full array
+    
+    # Handle outputting a single quantity
+    if which not in [None, 'all']:
+        if which not in output_keys:
+            raise KeyError(f'"which" must be one of {output_keys}')
+        else:
+            return output[which]
+    
+    return output
