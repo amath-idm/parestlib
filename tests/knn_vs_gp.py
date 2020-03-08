@@ -62,8 +62,11 @@ if npars >= 2:
     ax[0].set_ylabel(par_names[1])
 
 ax[1].plot([min(test_vals),max(test_vals)], [min(test_vals),max(test_vals)], 'r-')
-ax[1].errorbar(x=test_vals, y=test_vals_knn.best, yerr=[test_vals_knn.low, test_vals_knn.high], fmt='o', c='b', lw=0.5, label='KNN')
-ax[1].errorbar(x=test_vals, y=ret['Mean'], yerr=2*pl.sqrt(ret['Var_Latent']), fmt='o', c='g', lw=1, label='GP')
+knn_err_low  = test_vals_knn.best - test_vals_knn.low
+knn_err_high = test_vals_knn.high - test_vals_knn.best
+gp_err = 2*pl.sqrt(ret['Var_Latent'])
+ax[1].errorbar(x=test_vals, y=test_vals_knn.best, yerr=[knn_err_low, knn_err_high], fmt='o', c='b', lw=0.5, label='KNN')
+ax[1].errorbar(x=test_vals, y=ret['Mean'], yerr=gp_err, fmt='o', c='g', lw=1, label='GP')
 ax[1].legend()
 ax[1].set_xlabel('True Output')
 ax[1].set_ylabel('Predicted Output')
