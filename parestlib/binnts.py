@@ -38,7 +38,6 @@ class BINNTS(sc.prettyobj):
         self.acceptance    = acceptance    if acceptance    is not None else 0.5
         self.k             = k             if k             is not None else 3
         self.nbootstrap    = nbootstrap    if nbootstrap    is not None else 10
-        self.nbootstrap    = nbootstrap    if nbootstrap    is not None else 10
         self.maxiters      = maxiters      if maxiters      is not None else 20
         self.optimum       = optimum       if optimum       is not None else 'min'
         self.func_args     = func_args     if func_args     is not None else {}
@@ -124,7 +123,7 @@ class BINNTS(sc.prettyobj):
         ''' Calculate an estimated value for each of the candidate points '''
     
         # Calculate estimates
-        output = ut.bootknn(test=self.candidates, train=self.allsamples, values=self.allvalues)
+        output = ut.bootknn(test=self.candidates, train=self.allsamples, values=self.allvalues, k=self.k, nbootstrap=self.nbootstrap, weighted=self.weighted)
         estimates = output[which]
         
         # Choose best points

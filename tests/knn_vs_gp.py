@@ -1,3 +1,4 @@
+import sciris as sc
 import pandas as pd
 import pylab as pl
 import parestlib as pe
@@ -5,26 +6,61 @@ from history_matching.gpr import GPR
 from history_matching.basis import Basis
 
 
+#%% Set up the problem
+sc.tic()
+
 # Set input data parameters
 ntrain = 200
 ntest  = 50
 npars  = 2
 noise  = 0.3
+seed   = 1
 
 def gen_vals(raw, noise, dist='uniform'):
     ''' Calculate the noisy distance from the center '''
     output = pl.sqrt(((raw-raw.mean())**2).sum(axis=1))
     if dist == 'uniform':
-        output += noise*(pl.rand(len(output)))
+        output += noise*(pl.rand(len(output))-0.5)
     elif dist == 'gaussian':
-        output += noise*(pl.randn(len(output)))
+        output += noise*(pl.randn(len(output))-0.5)
     return output
 
 # Set up training and test arrays
+pl.seed(seed)
 train_arr = pl.rand(ntrain, npars)
 train_vals = gen_vals(train_arr, noise=noise)
 test_arr = pl.rand(ntest, npars)
-test_vals = gen_vals(test_arr, noise=noise)
+test_vals = gen_vals(test_arr, noise=noise*0)
+
+
+#%% KNN
+
+# Set parameters
+knn_style = ['vanilla', 'default', 'conservative'][2]
+
+if knn_style == 'vanilla': # Vanilla KNN, no bootstrapping, no distance weighting
+    k = 5
+    nbootstrap = 1
+    weighted = 0
+elif knn_style =='default': # BINNT defaults
+    k = 5
+    nbootstrap = 10
+    weighted = 1
+elif knn_style == 'conservative': # To more closely resemble a GP
+    k = 10
+    nbootstrap = 1
+    weighted = 1
+
+# Run
+t1_knn = sc.tic()
+test_vals_knn = pe.bootknn(test=test_arr, train=train_arr, values=train_vals, k=k, nbootstrap=nbootstrap, weighted=weighted) 
+t2_knn = sc.toc(t1_knn, output=True)
+timestr_knn = f'KNN time = {t2_knn:0.5f} s'
+
+
+#%% GP
+
+t1_gp = sc.tic()
 
 par_names = [f'x{i}' for i in range(npars)]
 param_info = pd.DataFrame( {'Min':[0,0], 'Max':[1,1]}, index=par_names)
@@ -55,9 +91,12 @@ gpr.optimize_hyperparameters(
 # Calculate the estimates
 ret = gpr.evaluate(test_data)
 
-test_vals_knn = pe.bootknn(test=test_arr, train=train_arr, values=train_vals) 
+t2_gp = sc.toc(t1_gp, output=True)
+timestr_gp = f'GP time = {t2_gp:0.5f} s'
 
-# Plot results
+
+
+#%% Plot results
 fig, ax = pl.subplots(1,2,figsize=(16,10))
 
 if npars >= 2:
@@ -76,5 +115,9 @@ ax[1].errorbar(x=test_vals, y=ret['Mean'], yerr=gp_err, fmt='o', c='g', lw=1, la
 ax[1].legend()
 ax[1].set_xlabel('True Output')
 ax[1].set_ylabel('Predicted Output')
+ax[1].set_title(f'KNN style: {knn_style}')
 
 pl.show()
+
+print(timestr_knn)
+print(timestr_gp)

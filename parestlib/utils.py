@@ -110,6 +110,15 @@ def bootknn(test, train, values, k=3, nbootstrap=10, weighted=1, scale_quantiles
         scale_quantiles = [0.25, 0.75]
     if output_quantiles is None:
         output_quantiles = [0.25, 0.75]
+        
+    k = int(k)
+    nbootstrap = int(nbootstrap) # Ensure it's the right
+    if k < 1:
+        print('Warning: the minimum value for k is 1; you supplied {k}')
+        k = 1
+    if nbootstrap < 1:
+        print('Warning: the minimum value for nbootstrap is 1; you supplied {nbootstrap}')
+        nbootstrap = 1
     
     # Calculate MxN distance array
     distances = scaled_norm(test, train, quantiles=scale_quantiles)
@@ -119,8 +128,10 @@ def bootknn(test, train, values, k=3, nbootstrap=10, weighted=1, scale_quantiles
     ntrain = len(train)
     est_arr = np.zeros((ntest, nbootstrap))
     for b in range(nbootstrap):
-        bs_inds = np.random.randint(0, ntrain, ntrain) # Bootstrapped indices of the training data
-        # bs_train = train[bs_inds,:]
+        if nbootstrap == 1:
+            bs_inds = range(ntrain) # Just pick all indices
+        else: # Do bootstrapping
+            bs_inds = np.random.randint(0, ntrain, ntrain) # Bootstrapped indices of the training data
         bs_values = values[bs_inds]
         bs_distances = distances[:,bs_inds]
         for p in range(ntest):
