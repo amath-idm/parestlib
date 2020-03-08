@@ -54,10 +54,10 @@ class BINNTS(sc.prettyobj):
         self.priorpars    = np.zeros((self.npars, self.npriorpars)) # Each parameter is defined by a 4-metaparameter prior distribution
         self.samples      = np.zeros((self.nsamples, self.npars)) # Array of parameter values
         self.candidates   = np.zeros((self.ncandidates, self.npars)) # Array of candidate samples
-        self.values      = np.zeros(self.nsamples) # For storing the values object (see optimize())
-        self.allpriorpars = np.zeros((self.maxiters, self.npars, self.npriorpars)) # For storing history of the prior-distribution parameters
-        self.allsamples   = np.zeros((0, self.npars), dtype=float) # For storing all points
-        self.allvalues   = np.zeros(0, dtype=float) # For storing all values
+        self.values       = np.zeros(self.nsamples) # For storing the values object (see optimize())
+        self.allpriorpars = np.zeros((0, self.npars, self.npriorpars)) # For storing history of the prior-distribution parameters
+        self.allsamples   = np.zeros((0, self.npars)) # For storing all points
+        self.allvalues    = np.zeros(0) # For storing all values
         
         return
     
@@ -89,7 +89,7 @@ class BINNTS(sc.prettyobj):
             else:
                 raise NotImplementedError('Currently, only "uniform" and "best" priors are supported')
             self.priorpars[p,:] = [alpha, beta, xloc, xscale]
-        self.allpriorpars[self.iteration,:,:] = self.priorpars
+        self.allpriorpars = np.concatenate([self.allpriorpars, [self.priorpars]])
         return
     
     
@@ -140,7 +140,7 @@ class BINNTS(sc.prettyobj):
             values = self.samples[:,p]
             pars = ut.beta_fit(values)
             self.priorpars[p,:] = pars
-        self.allpriorpars[self.iteration,:,:] = self.priorpars
+        self.allpriorpars = np.concatenate([self.allpriorpars, [self.priorpars]])
         return
         
     
@@ -155,7 +155,7 @@ class BINNTS(sc.prettyobj):
             self.draw_candidates() # Draw a new set of candidate points
             self.choose_samples() # Find new samples
             self.evaluate_samples() # Evaluate new samples
-            self.check_fit()
+            # self.check_fit() # TODO: fix
             self.refit_priors() # Refit the priors to the samples # TODO: allsamples or latest?
         
         # Create output structure
