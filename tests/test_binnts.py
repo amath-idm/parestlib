@@ -150,22 +150,27 @@ def test_distances(doplot=False):
 
 def test_estimates(doplot=False, verbose=False):
     
-    # Set parameters
-    ntrain     = 200
-    ntest      = 20
-    nbootstrap = 10
+    # Set input data parameters
+    ntrain = 200
+    ntest  = 50
+    npars  = 2
+    noise  = 0.5
+    seed   = 1
+    
+    # Set algorithm parameters
     k          = 3
-    npars      = 2
-    noise      = 0.5
+    nbootstrap = 10
+    weighted   = 1
     
     # Set up training and test arrays
+    pl.seed(seed)
     train_arr = pl.rand(ntrain, npars)
     train_vals = pl.sqrt(((train_arr-0.5)**2).sum(axis=1)) + noise*pl.rand(ntrain) # Distance from center
     test_arr = pl.rand(ntest, npars)
     
     # Calculate the estimates
     t1 = sc.tic()
-    test_vals = pe.knn(test=test_arr, train=train_arr, values=train_vals, k=k, nbootstrap=nbootstrap) 
+    test_vals = pe.knn(test=test_arr, train=train_arr, values=train_vals, k=k, nbootstrap=nbootstrap, weighted=weighted) 
     t2 = sc.toc(t1, output=True)
     timestr = f'time = {t2*1e3:0.2f} ms'
     print(timestr)
@@ -182,8 +187,6 @@ def test_estimates(doplot=False, verbose=False):
         test_args  = dict(marker='s', s=80)
         minval = min(train_vals.min(), test_vals.array.min())
         maxval = min(train_vals.max(), test_vals.array.max())
-        print(minval)
-        print(maxval)
         train_colors = sc.arraycolors(train_vals,      cmap=cmap, minval=minval, maxval=maxval)
         test_colors  = sc.arraycolors(test_vals.array, cmap=cmap, minval=minval, maxval=maxval)
         
