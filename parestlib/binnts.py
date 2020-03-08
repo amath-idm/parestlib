@@ -23,7 +23,7 @@ class BINNTS(sc.prettyobj):
     '''
     
     def __init__(self, func, x, xmin, xmax, neighbors=None, npoints=None, 
-                 acceptance=None, nbootstrap=None, nfolds=None, leaveout=None,
+                 acceptance=None, k=None, nbootstrap=None, quantile=None,
                  maxiters=None, optimum=None, func_args=None, verbose=None,
                  parallel_args=None, parallelize=None):
         
@@ -37,8 +37,10 @@ class BINNTS(sc.prettyobj):
         self.neighbors     = neighbors     if neighbors     is not None else 3
         self.npoints       = npoints       if npoints       is not None else 100
         self.acceptance    = acceptance    if acceptance    is not None else 0.5
-        self.nbootstrap    = nbootstrap    if nbootstrap    is not None else  10
-        self.maxiters      = maxiters      if maxiters      is not None else 50
+        self.k             = k             if k             is not None else 3
+        self.nbootstrap    = nbootstrap    if nbootstrap    is not None else 10
+        self.nbootstrap    = nbootstrap    if nbootstrap    is not None else 10
+        self.maxiters      = maxiters      if maxiters      is not None else 20
         self.optimum       = optimum       if optimum       is not None else 'min'
         self.func_args     = func_args     if func_args     is not None else {}
         self.verbose       = verbose       if verbose       is not None else 2
@@ -53,10 +55,10 @@ class BINNTS(sc.prettyobj):
         self.priorpars    = np.zeros((self.npars, self.npriorpars)) # Each parameter is defined by a 4-metaparameter prior distribution
         self.samples      = np.zeros((self.npoints, self.npars)) # Array of parameter values
         self.candidates   = np.zeros((self.ncandidates, self.npars)) # Array of candidate samples
-        self.results      = np.zeros(self.npoints) # For storing the results object (see optimize())
+        self.values      = np.zeros(self.npoints) # For storing the values object (see optimize())
         self.allpriorpars = np.zeros((self.maxiters, self.npars, self.npriorpars)) # For storing history of the prior-distribution parameters
         self.allsamples   = np.zeros((0, self.npars), dtype=float) # For storing all points
-        self.allresults   = np.zeros(0, dtype=float) # For storing all results
+        self.allvalues   = np.zeros(0, dtype=float) # For storing all values
         
         return
     
@@ -124,50 +126,21 @@ class BINNTS(sc.prettyobj):
         ''' Actually evaluate the objective function -- copied from shell_step.py '''
         if not self.parallelize:
             for s,sample in enumerate(self.samples):
-                self.results[s] = self.func(sample, **self.func_args) # This is the time-consuming step!!
+                self.values[s] = self.func(sample, **self.func_args) # This is the time-consuming step!!
         else:
-            resultslist = sc.parallelize(self.func, iterarg=self.samples, kwargs=self.func_args, **self.parallel_args)
-            self.results = np.array(resultslist, dtype=float)
+            valueslist = sc.parallelize(self.func, iterarg=self.samples, kwargs=self.func_args, **self.parallel_args)
+            self.values = np.array(valueslist, dtype=float)
         self.allsamples = np.concatenate([self.allsamples, self.samples])
-        self.allresults = np.concatenate([self.allresults, self.results])
+        self.allvalues = np.concatenate([self.allvalues, self.values])
         return
     
     
-    # def make_surfaces(self):
-    #     ''' Create the bootstrapped surfaces '''
-        
-    #     # Create surfaces
-    #     self.bs_pars = np.zeros((self.nbootstrap, len(self.allsamples), self.npars))
-    #     self.bs_vals = np.zeros((self.nbootstrap, len(self.allsamples)))
-    #     for b in range(self.nbootstrap):
-    #         bs_samples = np.random.randint(0, len(self.allsamples), len(self.allsamples)) # TODO should be able to use npoints or nsamples?!
-    #         for p in range(self.npars):
-    #             self.bs_pars[b,:,p] = self.allsamples[bs_samples, p]
-    #         self.bs_vals[b,:] = self.allresults[bs_samples]
-        
-        # Evaluate surfaces and choose number of neighbors
-        # folds = []
-        # for f in range(self.nfolds):
-        #     n_inds = len(self.samples)
-        #     all_inds = np.random.randint(0, n_inds)
-            # in_inds = all_inds[]
-        
-        # return
-    
-    
-    def estimate_samples(self):
+    def choose_samples(self, which='low'):
         ''' Calculate an estimated value for each of the candidate points '''
-        
-        # # Calculate distances
-        # distances = np.zeros((self.ncandidates, len(self.allsamples))) # Matrix of all distances
-        # for b in range(self.nbootstrap):
-        #     bs_pars = self.bs_pars[b,:,:] # e.g. 100 points with 5 parameter values
-        #     for c in range(self.ncandidates): # TODO: move this loop inside calculate_distances
-        #         candidate = self.candidates[c,:]
-        #         distances[b,c,:] = calculate_distances(point=candidate, arr=bs_pars)
-        
+    
         # Calculate estimates
-        output = ut.bootknn(points=self.candidates, distances=distances, values=self.bs_vals)
+        output = ut.bootknn(test=self.candidates, training=self.allsamples, values=self.allvalues)
+        estimates = output[which]
         
         # Choose best points
         ...
@@ -183,8 +156,7 @@ class BINNTS(sc.prettyobj):
         for i in range(self.maxiters): # Iterate
             if self.verbose>=1: print(f'Step {i+1} of {self.maxiters}')
             self.draw_candidates() # Draw a new set of candidate points
-            self.estimate_candidates() # Use DWKNN
-            self.choose_samples()
+            self.choose_samples() # Use DWKNN
             self.evaluate_samples()
             self.check_fit()
             self.refit_priors()
