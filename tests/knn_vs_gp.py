@@ -20,8 +20,8 @@ seed   = 1
 pl.seed(seed)
 train_arr = pl.rand(ntrain, npars)
 test_arr = pl.rand(ntest, npars)
-train_vals = pl.sqrt(((train_arr-0.5)**2).sum(axis=1)) + noise*(pl.rand(ntrain)-0.5) # Distance from center
-test_vals = pl.sqrt(((test_arr-0.5)**2).sum(axis=1)) + noise*(pl.rand(ntest)-0.5) # Distance from center
+train_vals = pl.sqrt(((train_arr-0.5)**2).sum(axis=1)) + noise*(pl.rand(ntrain)) # Distance from center
+test_vals = pl.sqrt(((test_arr-0.5)**2).sum(axis=1)) + noise*(pl.rand(ntest)) # Distance from center
 
 #%% KNN
 t1_knn = sc.tic()
