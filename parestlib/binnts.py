@@ -144,8 +144,8 @@ class BINNTS(sc.prettyobj):
     def update_hyperpars(self):
         ''' Compare predicted to actual values, and update the estimator hyperparameters '''
         
-        # Store the actual GOF
-        self.gof[self.iteration] = ut.gof(actual=a, predicted=b) 
+        # Store the actual GOF from this iteration
+        self.gof[self.iteration] = ut.gof(actual=self.values, predicted=self.estimates) 
         
         # Optimize hyperparameters for the next iteration
         hyperchoices = sc.objdict({
@@ -158,11 +158,13 @@ class BINNTS(sc.prettyobj):
         for i1,k in enumerate(hyperchoices.k):
             for i2,b in enumerate(hyperchoices.b):
                 for i3,w in enumerate(hyperchoices.w):
+                    previous_samples = self.allsamples[:-self.nsamples,:] # All but the latest samples
+                    previous_values = self.allvalues[:-self.nsamples] # All but the latest values
                     hyperpars = dict(k=k, nbootstrap=b, weighted=w)
-                    output = ut.bootknn(test=self.candidates, train=self.allsamples, values=self.allvalues, **hyperpars)
-                    gofs[i1,i2,i3] = ut.gof(actual=a, predicted=b)
+                    output = ut.bootknn(test=self.samples, train=previous_samples, values=previous_values, **hyperpars)
+                    gofs[i1,i2,i3] = ut.gof(actual=self.values, predicted=output.best)
         
-        
+        return
     
     
     def refit_priors(self):

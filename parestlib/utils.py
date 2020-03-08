@@ -6,7 +6,8 @@ import numpy as np
 import sciris as sc
 import scipy.stats as st
 
-__all__ = ['beta_pdf', 'beta_rvs', 'beta_fit', 'scaled_norm', 'bootknn']
+
+__all__ = ['beta_pdf', 'beta_rvs', 'beta_fit', 'mae', 'gof', 'scaled_norm', 'bootknn']
 
 
 #%% Beta distribution helper functions
@@ -32,6 +33,28 @@ def beta_fit(data):
     mu, std, a, b = st.beta.fit(data)
     pars = np.array([mu, std, a, b], dtype=float)
     return pars
+
+
+def mae(actual, predicted):
+    ''' Compute median absolute deviation '''
+    mismatches = abs(actual - predicted)
+    output = np.median(mismatches)
+    return output
+
+
+def gof(actual, predicted, estimator=None):
+    ''' Calculate the goodness of fit. Default estimator is median absolute error. '''
+    
+    if estimator is None:
+        estimator = 'mae' # Median absolute error
+    else:
+        import sklearn.metrics as sm
+        try:
+            gof_func = getattr(sm, 'estimator')
+        except AttributeError:
+            raise AttributeError(f'Estimator {estimator} is not available; see https://scikit-learn.org/stable/modules/model_evaluation.html#scoring-parameter for options')
+    output = 
+    return output
     
 
 #%% Estimation functions
