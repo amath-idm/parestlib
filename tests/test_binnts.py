@@ -223,16 +223,17 @@ def test_beta_fit(doplot=False):
     n = 100
     data = pl.randn(n)*0.3+0.7
     pars = pe.beta_fit(data)
-    pl.hist(data, bins=20, density=True, alpha=0.6, color='g')
-    xmin, xmax = pl.xlim()
-    xvec = pl.linspace(xmin, xmax, 100)
-    p = pe.beta_pdf(pars, xvec)
-    pl.plot(xvec, p, 'k', linewidth=2)
-    pl.title(f"Fit results: mu={pars[0]:.2f}, std={pars[1]:.2f}")
+    if doplot:
+        pl.hist(data, bins=20, density=True, alpha=0.6, color='g')
+        xmin, xmax = pl.xlim()
+        xvec = pl.linspace(xmin, xmax, 100)
+        p = pe.beta_pdf(pars, xvec)
+        pl.plot(xvec, p, 'k', linewidth=2)
+        pl.title(f"Fit results: mu={pars[0]:.2f}, std={pars[1]:.2f}")
     return pars
 
 
-def test_optimization():
+def test_optimization(doplot=False):
     sc.heading('Run an actual optimization')
     B = pe.BINNTS(func=objective, x=x, xmin=xmin, xmax=xmax, **binnts_pars)
     R = B.optimize()
@@ -248,8 +249,8 @@ if __name__ == '__main__':
     # bs_pars, bs_vals = test_bootstrap(doplot=doplot)
     # distances = test_distances(doplot=doplot)
     # estimates = test_estimates(doplot=doplot)
-    pars = test_beta_fit(doplot=doplot)
-    # R = test_optimization(doplot=doplot)
+    # pars = test_beta_fit(doplot=doplot)
+    R = test_optimization(doplot=doplot)
     print('\n'*2)
     sc.toc()
     print('Done.')

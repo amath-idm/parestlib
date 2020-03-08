@@ -93,13 +93,17 @@ class BINNTS(sc.prettyobj):
         return
     
     
-    def draw_samples(self, init=False): # TODO: refactor discrepancy between points and samples and candidates
+    def draw_initial_samples(self): # TODO: refactor discrepancy between points and samples and candidates
         ''' Choose samples from the (current) prior distribution '''
         for p in range(self.npars): # Loop over the parameters
-            if init: # Initial samples
-                self.samples[:,p] = ut.beta_rvs(pars=self.priorpars[p,:], n=self.npoints)
-            else: 
-                self.candidates[:,p] = self.beta_rvs(pars=self.priorpars[p,:], n=self.ncandidates)
+            self.samples[:,p] = ut.beta_rvs(pars=self.priorpars[p,:], n=self.npoints)
+        return
+    
+    
+    def draw_candidates(self):
+        ''' Choose samples from the (current) prior distribution '''
+        for p in range(self.npars): # Loop over the parameters
+            self.candidates[:,p] = ut.beta_rvs(pars=self.priorpars[p,:], n=self.ncandidates)
         return
     
     
@@ -120,7 +124,7 @@ class BINNTS(sc.prettyobj):
         ''' Calculate an estimated value for each of the candidate points '''
     
         # Calculate estimates
-        output = ut.bootknn(test=self.candidates, training=self.allsamples, values=self.allvalues)
+        output = ut.bootknn(test=self.candidates, train=self.allsamples, values=self.allvalues)
         estimates = output[which]
         
         # Choose best points
