@@ -170,7 +170,7 @@ def test_estimates(doplot=False, verbose=False):
     
     # Calculate the estimates
     t1 = sc.tic()
-    test_vals = pe.knn(test=test_arr, train=train_arr, values=train_vals, k=k, nbootstrap=nbootstrap, weighted=weighted) 
+    test_vals = pe.bootknn(test=test_arr, train=train_arr, values=train_vals, k=k, nbootstrap=nbootstrap, weighted=weighted) 
     t2 = sc.toc(t1, output=True)
     timestr = f'time = {t2*1e3:0.2f} ms'
     print(timestr)

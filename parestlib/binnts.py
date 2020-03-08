@@ -1,15 +1,12 @@
 '''
-Density-weighted iterative threshold sampling.
-
-The naming convention is to distinguish the module (shell_step) from the function
-(shellstep).
+Bootstrapped iterative nearest-neighbor threshold sampling (BINNTS.
 
 Basic usage is:
     
     import parestlib as pe
     output = pe.binnts(func, x, xmin, xmax)
 
-Version: 2020mar06
+Version: 2020mar07
 '''
 
 import numpy as np
@@ -171,7 +168,7 @@ class BINNTS(sc.prettyobj):
         #         distances[b,c,:] = calculate_distances(point=candidate, arr=bs_pars)
         
         # Calculate estimates
-        output = ut.knn(points=self.candidates, distances=distances, values=self.bs_vals)
+        output = ut.bootknn(points=self.candidates, distances=distances, values=self.bs_vals)
         
         # Choose best points
         ...
@@ -181,15 +178,15 @@ class BINNTS(sc.prettyobj):
     
     def optimize(self):
         ''' Actually perform an optimization '''
-        self.initialize_priors() # Initialize
-        self.draw_samples(init=True)
-        self.evaluate() # Evaluate the objective function
+        self.initialize_priors() # Initialize prior distributions
+        self.draw_initial_samples() # Draw initial parameter samples
+        self.evaluate_samples() # Evaluate the objective function at each sample point
         for i in range(self.maxiters): # Iterate
             if self.verbose>=1: print(f'Step {i+1} of {self.maxiters}')
-            self.make_surfaces() # Calculate the bootstrapped surface of nearest neighbors
-            self.draw_samples()
-            self.estimate_samples()
-            self.evaluate()
+            self.draw_candidates() # Draw a new set of candidate points
+            self.estimate_candidates() # Use DWKNN
+            self.choose_samples()
+            self.evaluate_samples()
             self.check_fit()
             self.refit_priors()
         
@@ -207,8 +204,8 @@ def binnts(*args, **kwargs):
     '''
     Wrapper for BINNTS class
     '''
-    dwest = BINNTS(*args, **kwargs) # Create class instance
-    output = dwest.optimize() # Run the optimization
+    B = BINNTS(*args, **kwargs) # Create class instance
+    output = B.optimize() # Run the optimization
     return output
     
     

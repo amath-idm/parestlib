@@ -5,7 +5,7 @@ Numerical utilities; currently used for BINNTs.
 import numpy as np
 import sciris as sc
 
-__all__ = ['scaled_norm', 'knn']
+__all__ = ['scaled_norm', 'bootknn']
 
 
 def scaled_norm(test, train, quantiles='IQR'):
@@ -55,9 +55,12 @@ def scaled_norm(test, train, quantiles='IQR'):
     return distances
 
 
-def knn(test, train, values, k=3, nbootstrap=10, weighted=0, scale_quantiles=None, output_quantiles=None, which='all'):
+def bootknn(test, train, values, k=3, nbootstrap=10, weighted=1, scale_quantiles=None, output_quantiles=None, outputkey='all'):
     '''
-    Perform k-nearest-neighbors estimation.
+    Perform boostrapped distance-weighted k-nearest-neighbors estimation.
+    
+    Usage:
+        output = pe.bootknn(test_points, train_points, train_values)
     
     Args:
         test (NxP float): Test set: N points in P-dimensional space for which the values need to be estimated
@@ -68,7 +71,7 @@ def knn(test, train, values, k=3, nbootstrap=10, weighted=0, scale_quantiles=Non
         weighted (float): Whether or not neighbors should be weighted by distance; default 0, 1=50% weight to distance, 10=90% weight
         scale_quantiles (2 int): Pair of quantiles for bound estimation
         output_quantiles (2 int): Pair of quantiles for the low and high estimates of the output
-        which (str): Which quantity to output, can be 'best', 'min', etc.; default 'all', which returns the full object
+        outputkey (str): Which quantity to output, can be 'best', 'min', etc.; default 'all', which returns the full object
     
     Returns:
         output (objdict): An object with best, low, and high estimates of the value at each test point
@@ -119,10 +122,10 @@ def knn(test, train, values, k=3, nbootstrap=10, weighted=0, scale_quantiles=Non
     output.array = stats # Store the full array
     
     # Handle outputting a single quantity
-    if which not in [None, 'all']:
-        if which not in output_keys:
+    if outputkey not in [None, 'all']:
+        if outputkey not in output_keys:
             raise KeyError(f'"which" must be one of {output_keys}')
         else:
-            return output[which]
+            return output[outputkey]
     
     return output
