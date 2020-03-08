@@ -51,9 +51,11 @@ class BINNTS(sc.prettyobj):
         self.npars        = len(x) # Number of parameters being fit
         self.npriorpars   = 4 # Number of parameters in the prior distribution
         self.priorpars    = np.zeros((self.npars, self.npriorpars)) # Each parameter is defined by a 4-metaparameter prior distribution
-        self.samples      = np.zeros((self.nsamples, self.npars)) # Array of parameter values
         self.candidates   = np.zeros((self.ncandidates, self.npars)) # Array of candidate samples
-        self.values       = np.zeros(self.nsamples) # For storing the values object (see optimize())
+        self.samples      = np.zeros((self.nsamples, self.npars)) # Array of parameter values
+        self.values       = np.zeros(self.nsamples) # For storing the values at each point
+        self.estimates    = np.zeros(self.nsamples) # For storing the estimated values
+        self.gof          = np.zeros(self.maxiters) # Store the goodness of fit for the estimator
         self.allpriorpars = np.zeros((0, self.npars, self.npriorpars)) # For storing history of the prior-distribution parameters
         self.allsamples   = np.zeros((0, self.npars)) # For storing all points
         self.allvalues    = np.zeros(0) # For storing all values
@@ -120,17 +122,47 @@ class BINNTS(sc.prettyobj):
     
     
     def choose_samples(self, which='low'):
-        ''' Calculate an estimated value for each of the candidate points '''
+        '''
+        Calculate an estimated value for each of the candidate points. Default
+        is to use "low" rather than "best" with the idea that a very good fit
+        is unlikely to be due to random chance.
+        '''
     
         # Calculate estimates
-        output = ut.bootknn(test=self.candidates, train=self.allsamples, values=self.allvalues, k=self.k, nbootstrap=self.nbootstrap, weighted=self.weighted)
+        hyperpars = dict(k=self.k, nbootstrap=self.nbootstrap, weighted=self.weighted)
+        output = ut.bootknn(test=self.candidates, train=self.allsamples, values=self.allvalues, **hyperpars)
         estimates = output[which]
         
         # Choose best points
         order = estimates.argsort()
         best_inds = order[:self.nsamples]
         self.samples = self.candidates[best_inds]
+        self.estimates = output['best'][best_inds] # Use the best-estimates for predictions
         return
+    
+    
+    def update_hyperpars(self):
+        ''' Compare predicted to actual values, and update the estimator hyperparameters '''
+        
+        # Store the actual GOF
+        self.gof[self.iteration] = ut.gof(actual=a, predicted=b) 
+        
+        # Optimize hyperparameters for the next iteration
+        hyperchoices = sc.objdict({
+            'k': [1, 2, 3, 5, 10, 30], # Number of clusters
+            'b': [1, 10], # Number of bootstraps
+            'w': [0, 1, 3, 10, 100], # Distance weighting
+        })
+        
+        gofs = np.zeros((len(hyper.k), len(hyper.w), len(hyper.b)))
+        for i1,k in enumerate(hyperchoices.k):
+            for i2,b in enumerate(hyperchoices.b):
+                for i3,w in enumerate(hyperchoices.w):
+                    hyperpars = dict(k=k, nbootstrap=b, weighted=w)
+                    output = ut.bootknn(test=self.candidates, train=self.allsamples, values=self.allvalues, **hyperpars)
+                    gofs[i1,i2,i3] = ut.gof(actual=a, predicted=b)
+        
+        
     
     
     def refit_priors(self):
@@ -154,7 +186,7 @@ class BINNTS(sc.prettyobj):
             self.draw_candidates() # Draw a new set of candidate points
             self.choose_samples() # Find new samples
             self.evaluate_samples() # Evaluate new samples
-            # self.check_fit() # TODO: fix
+            self.update_hyperpars() # Check how well the estimator did
             self.refit_priors() # Refit the priors to the samples # TODO: allsamples or latest?
         
         # Create output structure
