@@ -22,7 +22,7 @@ class BINNTS(sc.prettyobj):
     '''
     
     def __init__(self, func, x, xmin, xmax, neighbors=None, nsamples=None, 
-                 acceptance=None, k=None, nbootstrap=None, quantile=None,
+                 acceptance=None, k=None, nbootstrap=None, weighted=None,
                  maxiters=None, optimum=None, func_args=None, verbose=None,
                  parallel_args=None, parallelize=None):
         
@@ -32,12 +32,17 @@ class BINNTS(sc.prettyobj):
         self.xmin = np.array(xmin)
         self.xmax = np.array(xmax)
         
-        # Handle optional arguments
+        # BINNTS options
         self.neighbors     = neighbors     if neighbors     is not None else 3
         self.nsamples      = nsamples      if nsamples      is not None else 100
         self.acceptance    = acceptance    if acceptance    is not None else 0.5
+        
+        # BootKNN options
         self.k             = k             if k             is not None else 3
         self.nbootstrap    = nbootstrap    if nbootstrap    is not None else 10
+        self.weighted      = weighted      if weighted      is not None else 1
+        
+        # Housekeeping options
         self.maxiters      = maxiters      if maxiters      is not None else 20
         self.optimum       = optimum       if optimum       is not None else 'min'
         self.func_args     = func_args     if func_args     is not None else {}
@@ -55,7 +60,7 @@ class BINNTS(sc.prettyobj):
         self.samples      = np.zeros((self.nsamples, self.npars)) # Array of parameter values
         self.values       = np.zeros(self.nsamples) # For storing the values at each point
         self.estimates    = np.zeros(self.nsamples) # For storing the estimated values
-        self.gof          = np.zeros(self.maxiters) # Store the goodness of fit for the estimator
+        self.gof          = np.zeros(self.maxiters+1) # Store the goodness of fit for the estimator
         self.allpriorpars = np.zeros((0, self.npars, self.npriorpars)) # For storing history of the prior-distribution parameters
         self.allsamples   = np.zeros((0, self.npars)) # For storing all points
         self.allvalues    = np.zeros(0) # For storing all values
@@ -154,7 +159,7 @@ class BINNTS(sc.prettyobj):
             'w': [0, 1, 3, 10, 100], # Distance weighting
         })
         
-        gofs = np.zeros((len(hyper.k), len(hyper.w), len(hyper.b)))
+        gofs = np.zeros((len(hyperchoices.k), len(hyperchoices.b), len(hyperchoices.w)))
         for i1,k in enumerate(hyperchoices.k):
             for i2,b in enumerate(hyperchoices.b):
                 for i3,w in enumerate(hyperchoices.w):

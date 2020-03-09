@@ -10,15 +10,13 @@ import parestlib as pe
 
 
 #%% Define the parameters
+
 doplot    = True
 figsize   = (18,12)
 eqfigsize = (18,18)
-x         = [0.2, 0.5]
-xmin      = [0, 0]
-xmax      = [1, 1]
+
 
 #%% Define the tests
-
 
 def test_distances(doplot=False):
     npoints = 1000
@@ -133,6 +131,7 @@ def test_beta_fit(doplot=False):
     data = pl.randn(n)*0.3+0.7
     pars = pe.beta_fit(data)
     if doplot:
+        pl.figure(figsize=figsize)
         pl.hist(data, bins=20, density=True, alpha=0.6, color='g')
         xmin, xmax = pl.xlim()
         xvec = pl.linspace(xmin, xmax, 100)
