@@ -35,7 +35,6 @@ def beta_fit(data):
     return pars
 
 
-
 def gof(actual, predicted, use_mean=True, use_frac=True, use_squared=False, estimator=None, die=True, eps=1e-9):
     ''' Calculate the goodness of fit. Default estimator is mean fractional error. '''
     
