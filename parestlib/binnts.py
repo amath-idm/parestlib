@@ -6,7 +6,7 @@ Basic usage is:
     import parestlib as pe
     output = pe.binnts(func, x, xmin, xmax)
 
-Version: 2020mar07
+Version: 2020mar08
 '''
 
 import numpy as np

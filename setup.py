@@ -34,5 +34,6 @@ setup(
         "numpy>=1.10.1",
         "scipy>=1.2.0",
         "sciris>=0.15.6",
+        "statsmodels",
     ],
 )

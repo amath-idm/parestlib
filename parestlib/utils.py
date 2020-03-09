@@ -7,7 +7,7 @@ import sciris as sc
 import scipy.stats as st
 
 
-__all__ = ['beta_pdf', 'beta_rvs', 'beta_fit', 'mae', 'gof', 'scaled_norm', 'bootknn']
+__all__ = ['beta_pdf', 'beta_rvs', 'beta_fit', 'gof', 'scaled_norm', 'bootknn']
 
 
 #%% Beta distribution helper functions
@@ -35,27 +35,48 @@ def beta_fit(data):
     return pars
 
 
-def mae(actual, predicted):
-    ''' Compute median absolute deviation '''
-    mismatches = abs(actual - predicted)
-    output = np.median(mismatches)
-    return output
 
-
-def gof(actual, predicted, estimator=None):
-    ''' Calculate the goodness of fit. Default estimator is median absolute error. '''
+def gof(actual, predicted, use_mean=True, use_frac=True, use_squared=False, estimator=None, die=True, eps=1e-9):
+    ''' Calculate the goodness of fit. Default estimator is mean fractional error. '''
     
-    if estimator is None:
-        estimator = 'mae' # Median absolute error
-    else:
-        import sklearn.metrics as sm
+    # Use an sklearn estimator
+    if estimator is not None:
         try:
-            gof_func = getattr(sm, 'estimator')
+            import sklearn.metrics as sm 
+        except ImportError:
+            raise ImportError('You must have scikit-learn installed to use a custom estimator')
+        try:
+            sklearn_gof = getattr(sm, 'estimator')
         except AttributeError:
             raise AttributeError(f'Estimator {estimator} is not available; see https://scikit-learn.org/stable/modules/model_evaluation.html#scoring-parameter for options')
-    output = 
+    
+        output = sklearn_gof(actual, predicted)
+    
+    # Use default methods here
+    else:
+        mismatches = abs(actual - predicted)
+        
+        if use_squared:
+            mismatches = mismatches**2
+        
+        if use_frac:
+            if (actual<0).any() or (predicted<0).any():
+                errormsg = 'WARNING: Calculating fractional errors for non-positive quantities is ill-advised!'
+                if die:
+                    raise ValueError(errormsg)
+                else:
+                    print(errormsg)
+            else:
+                mismatches /= (actual+eps)
+        
+        if use_mean:
+            output = mismatches.mean()
+        else:
+            output = mismatches.median()
+            
     return output
     
+
 
 #%% Estimation functions
 
