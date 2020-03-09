@@ -14,6 +14,8 @@ import parestlib as pe
 doplot    = True
 figsize   = (18,12)
 eqfigsize = (18,18)
+hifigsize = (24,18)
+axis_args    = {'left':0.1, 'bottom':0.05, 'right':0.9, 'top':0.97, 'wspace':0.2, 'hspace':0.25}
 
 
 #%% Define the tests
@@ -141,14 +143,134 @@ def test_beta_fit(doplot=False):
     return pars
 
 
+def test_gof(doplot=False):
+    n = 100
+    noise1 = 0.1
+    noise2 = 0.5
+    noise3 = 2
+    normalize_data = True
+    normalize = True
+    ylim = True
+    minval = 0.1
+    subtract_min = True
+    
+    true_unif   = pl.rand(n)
+    true_normal = pl.randn(n) + 5
+    
+    pairs = sc.objdict({
+        'uniform_low': [true_unif,
+                        true_unif + noise1*pl.rand(n)],
+        'uniform_med': [true_unif,
+                        true_unif + noise2*pl.rand(n)],
+        'uniform_high': [true_unif,
+                         true_unif + noise3*pl.rand(n)],
+        'uniform_mul': [true_unif,
+                         true_unif * 2*pl.rand(n)],
+        'normal': [true_normal,
+                   true_normal + noise2*pl.randn(n)],
+        })
+    
+    # Remove any DC offset, while ensuring it doesn't go negative
+    for pairkey,pair in pairs.items():
+        actual = sc.dcp(pair[0])
+        predicted = sc.dcp(pair[1])
+        
+        if subtract_min:
+            minmin = min(actual.min(), predicted.min())
+            actual    += minval - minmin
+            predicted += minval - minmin
+        
+        if normalize_data:
+            a_mean = actual.mean()
+            p_mean = predicted.mean()
+            if a_mean > p_mean:
+                predicted += a_mean - p_mean
+            elif a_mean < p_mean:
+                actual += p_mean - a_mean
+            pairs[pairkey][0] = actual
+            pairs[pairkey][1] = predicted
+    
+    for pair in pairs.values():
+        print(pair[0].mean())
+        print(pair[1].mean())
+    
+    methods = [
+        'mean fractional',
+        'mean absolute',
+        'median fractional',
+        'median absolute',
+        'max_error',
+        'mean_absolute_error',
+        'mean_squared_error',
+        'mean_squared_error',
+        'mean_squared_log_error',
+        'median_absolute_error',
+        # 'r2_score',
+        'mean_poisson_deviance',
+        'mean_gamma_deviance',
+        ]
+    
+    npairs = len(pairs)
+    nmethods = len(methods)
+    
+    results = pl.zeros((npairs, nmethods))
+    for m,method in enumerate(methods):
+        print(f'\nWorking on method {method}:')
+        for p,pairkey,pair in pairs.enumitems():
+            print(f'    Working on data {pairkey}')
+            actual = pair[0]
+            predicted = pair[1]
+            try:
+                results[p,m] = pe.gof(actual, predicted, estimator=method)
+            except Exception as E:
+                print(' '*10 + f'Failed: {str(E)}')
+            if pl.isnan(results[p,m]):
+                print(' '*10 + f'Returned NaN: {method}')
+    
+    if normalize:
+        results = results/results.max(axis=0)
+                
+    if doplot:
+        pl.figure(figsize=hifigsize)
+        pl.subplots_adjust(**axis_args)
+        colors = sc.gridcolors(nmethods)
+        for p,pairkey,pair in pairs.enumitems():
+            
+            lastrow = (p == npairs-1)
+            
+            pl.subplot(npairs, 2, p*2+1)
+            actual = pair[0]
+            predicted = pair[1]
+            pl.scatter(actual, predicted)
+            pl.title(f"Data for {pairkey}")
+            pl.ylabel('Predicted')
+            if lastrow:
+                pl.xlabel('Actual')
+            
+            pl.subplot(npairs, 2, p*2+2)
+            for m,method in enumerate(methods):
+                pl.bar(m, results[p,m], facecolor=colors[m], label=f'{m}={method}')
+            pl.gca().set_xticks(pl.arange(m+1))
+            pl.ylabel('Goodness of fit')
+            pl.title(f"Normalized GOF for {pairkey}")
+            if lastrow: 
+                pl.xlabel('Estimator')
+                pl.legend()
+            if ylim:
+                pl.ylim([0,1])
+            
+    return results
+
+
 
 #%% Run as a script -- comment out lines to turn off tests
     
 if __name__ == '__main__':
     sc.tic()
-    distances = test_distances(doplot=doplot)
-    estimates = test_estimates(doplot=doplot)
-    pars = test_beta_fit(doplot=doplot)
+    # distances = test_distances(doplot=doplot)
+    # estimates = test_estimates(doplot=doplot)
+    # pars = test_beta_fit(doplot=doplot)
+    gofs = test_gof(doplot=doplot)
     print('\n'*2)
     sc.toc()
     print('Done.')

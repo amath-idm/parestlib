@@ -38,40 +38,56 @@ def beta_fit(data):
 def gof(actual, predicted, use_mean=True, use_frac=True, use_squared=False, estimator=None, die=True, eps=1e-9):
     ''' Calculate the goodness of fit. Default estimator is mean fractional error. '''
     
-    # Use an sklearn estimator
+    # Handle the estimator argument, if supplied
     if estimator is not None:
-        try:
-            import sklearn.metrics as sm 
-        except ImportError:
-            raise ImportError('You must have scikit-learn installed to use a custom estimator')
-        try:
-            sklearn_gof = getattr(sm, 'estimator')
-        except AttributeError:
-            raise AttributeError(f'Estimator {estimator} is not available; see https://scikit-learn.org/stable/modules/model_evaluation.html#scoring-parameter for options')
-    
-        output = sklearn_gof(actual, predicted)
+        
+        # Handle default cases by setting input arguments
+        if estimator == 'mean fractional':
+            use_mean = True
+            use_frac = True
+        elif estimator == 'mean absolute':
+            use_mean = True
+            use_frac = False
+        elif estimator == 'median fractional':
+            use_mean = False
+            use_frac = True
+        elif estimator == 'median absolute':
+            use_mean = False
+            use_frac = False
+        
+        # Use sklearn
+        else:
+            try:
+                import sklearn.metrics as sm
+                sklearn_gof = getattr(sm, estimator) # Shortcut to e.g. sklearn.metrics.max_error
+            except ImportError as E:
+                raise ImportError(f'You must have sklearn >=0.22.2 installed: {str(E)}')
+            except AttributeError:
+                raise AttributeError(f'Estimator {estimator} is not available; see https://scikit-learn.org/stable/modules/model_evaluation.html#scoring-parameter for options')
+        
+            output = sklearn_gof(actual, predicted)
+            return output
     
     # Use default methods here
-    else:
-        mismatches = abs(actual - predicted)
-        
-        if use_squared:
-            mismatches = mismatches**2
-        
-        if use_frac:
-            if (actual<0).any() or (predicted<0).any():
-                errormsg = 'WARNING: Calculating fractional errors for non-positive quantities is ill-advised!'
-                if die:
-                    raise ValueError(errormsg)
-                else:
-                    print(errormsg)
+    mismatches = abs(actual - predicted)
+    
+    if use_squared:
+        mismatches = mismatches**2
+    
+    if use_frac:
+        if (actual<0).any() or (predicted<0).any():
+            errormsg = 'WARNING: Calculating fractional errors for non-positive quantities is ill-advised!'
+            if die:
+                raise ValueError(errormsg)
             else:
-                mismatches /= (actual+eps)
-        
-        if use_mean:
-            output = mismatches.mean()
+                print(errormsg)
         else:
-            output = mismatches.median()
+            mismatches /= (actual+eps)
+    
+    if use_mean:
+        output = mismatches.mean()
+    else:
+        output = np.median(mismatches)
             
     return output
     
