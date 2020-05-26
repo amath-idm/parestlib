@@ -8,7 +8,7 @@ Version: 2020mar04
 '''
 
 import sciris as sc
-import parestlib as om
+import parestlib as pe
 
 problems = [
     'norm',
@@ -21,11 +21,11 @@ startvals = {
 }
 
 methods = {
-    'ASD':       om.asd,
-    #'BSD':       om.bsd,
-    'ShellStep': om.shellstep,
-}
-
+        'ASD':       pe.asd,
+        #'BSD':       pe.bsd,
+        'ShellStep': pe.shellstep,
+        'BINNTS':    pe.binnts,
+        }
 
 kwargs = {
     'ASD': {},
@@ -46,32 +46,28 @@ kwargs = {
                     'max': 1.4
             }
         },
-    }
+    },
+    'BINNTS': {},
 }
 
 repeats = 3
 noisevals = [0, 0.05] # For noise values of larger than 0.05, standard ASD breaks
 #if 'doplot' not in locals(): doplot = True # For future use if plotting is implemented
 
-def heading(string):
-    divider = '—'*15 # Unicode, watch out!
-    sc.colorize('blue', '\n'*3+divider+string+divider)
-    return None
 
 results = []
 for method,optim_func in methods.items():
     for problem in problems:
-        heading('Running %s on %s()' % (method, problem))
+        sc.heading(f'Running {method}() on {problem}')
         for n,noise in enumerate(noisevals):
 
             # Define the problem
-            if   problem == 'norm':       objective_func = om.make_norm(noise=noise, verbose=0)
-            elif problem == 'rosenbrock': objective_func = om.make_rosenbrock(ndims=len(startvals), noise=noise, verbose=0)
+            if   problem == 'norm':       objective_func = pe.make_norm(noise=noise, verbose=0)
+            elif problem == 'rosenbrock': objective_func = pe.make_rosenbrock(ndims=len(startvals), noise=noise, verbose=0)
             else:                         raise NotImplementedError
 
             for r in range(repeats):
-                print('\nRun %s of %s with noise=%s:' % (n*repeats+r+1, repeats*len(noisevals), noise))
-                
+                print(f'\nRun {n*repeats+r+1} of {repeats*len(noisevals)} with noise={noise}:')
                 result = optim_func(objective_func, startvals[problem], optimum='min', verbose=0, **kwargs[method])
                 results.append(result)
                 # DJK N.B. Iterations is different from the number of funcation evaluations!

@@ -1,7 +1,7 @@
 '''
 Plot the stochastic descent algorithm.
 
-Version: 2019aug22
+Version: 2020feb29
 '''
 
 import pylab as pl
@@ -9,8 +9,8 @@ import sciris as sc
 import parestlib as pe
 
 # Choose the problem and method
-problem   = ['norm', 'rosenbrock', 'hills'][1]
-method    = ['shellstep', 'asd'][0]
+problem   = ['norm', 'rosenbrock', 'hills'][0]
+method    = ['shellstep', 'asd', 'dwits'][0]
 maxiters  = 50
 uselog    = 1
 geometry  = 3# 0#3
@@ -69,6 +69,7 @@ if method == 'shellstep':
                                'useadaptation':1}][geometry],
                           maxiters=maxiters)
     samples = output.obj.allsamples # Make this easier 
+
 elif method == 'asd':
     output = pe.asd(function=objective_func, 
                     x=initial, 
@@ -78,6 +79,15 @@ elif method == 'asd':
                     maxiters=maxiters,
                     verbose=2)
     samples = output.details.xvals # Make this easier 
+
+elif method == 'dwits':
+    output = pe.dwits(func=objective_func, 
+                          x=initial, 
+                          xmin=minvals, 
+                          xmax=maxvals,
+                          maxiters=maxiters)
+    samples = output.details.xvals # Make this easier 
+
 
 
 # Animate the results
