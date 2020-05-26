@@ -82,32 +82,6 @@ def test_sampling(doplot=False):
     return B.samples
     
 
-# def test_bootstrap(doplot=False):
-#     sc.heading('Bootstrapped parameter values')
-#     B = pe.BINNTS(func=objective, x=x, xmin=xmin, xmax=xmax, **binnts_pars)
-#     B.initialize_priors()
-#     B.draw_initial_samples(init=True)
-#     B.evaluate()
-#     B.make_surfaces()
-#     if doplot:
-#         sf = 300 # Scale factor from value to point size for plotting
-#         x_ind = 0 # Which parameter corresponds to the x axis -- just for plotting
-#         y_ind = 1 # Ditto for y
-#         pl.figure(figsize=figsize)
-#         for b in range(B.nbootstrap):
-#             pl.clf()
-#             this_bs = B.bs_pars[b]
-#             vals = B.bs_vals[b]
-#             p1 = this_bs[:,x_ind]
-#             p2 = this_bs[:,y_ind]
-#             pl.scatter(p1, p2, s=vals*sf)
-#             pl.title(f'Bootstrap {b+1} of {B.nbootstrap}, size ∝ error')
-#             pl.xlim([B.xmin[x_ind], B.xmax[x_ind]])
-#             pl.ylim([B.xmin[y_ind], B.xmax[y_ind]])
-#             pl.pause(0.2)
-#     return B.bs_pars, B.bs_vals
-
-
 def test_optimization(doplot=False):
     sc.heading('Run an actual optimization')
     B = pe.BINNTS(func=objective, x=x, xmin=xmin, xmax=xmax, **binnts_pars)

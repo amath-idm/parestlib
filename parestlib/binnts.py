@@ -168,6 +168,8 @@ class BINNTS(sc.prettyobj):
                     hyperpars = dict(k=k, nbootstrap=b, weighted=w)
                     output = ut.bootknn(test=self.samples, train=previous_samples, values=previous_values, **hyperpars)
                     gofs[i1,i2,i3] = ut.gof(actual=self.values, predicted=output.best)
+                    
+        print('TODO: update hyperpars')
         
         return
     
