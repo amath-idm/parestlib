@@ -1,4 +1,4 @@
-from .version import *
+from .version import __version__, __versiondate__
 from .utils import *
 from .problem_suite import *
 from .sim_suite import *
