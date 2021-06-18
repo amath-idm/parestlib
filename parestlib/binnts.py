@@ -1,5 +1,5 @@
 '''
-Bootstrapped iterative nearest-neighbor threshold sampling (BINNTS.
+Bootstrapped iterative nearest-neighbor threshold sampling (BINNTS).
 
 Basic usage is:
     
