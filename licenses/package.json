@@ -20,7 +20,7 @@
     "coronadatascraper-data": "file:custom/coronadatascraper-data",
     "covid-tracking-data": "file:custom/covid-tracking-data",
     "file-saver": "2.0.2",
-    "plotly.js": "1.53.0",
+    "plotly.js": "2.25.2",
     "polyfill.io": "file:custom/polyfill.io",
     "sciris-js": "0.2.18",
     "themify-icons": "file:custom/themify-icons",
